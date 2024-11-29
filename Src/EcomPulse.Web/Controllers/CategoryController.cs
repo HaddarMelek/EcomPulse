@@ -1,28 +1,23 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using EcomPulse.Web.Data;
 using EcomPulse.Web.Models;
+using EcomPulse.Web.Services;
+using Microsoft.AspNetCore.Mvc;
 
 namespace EcomPulse.Web.Controllers
 {
     public class CategoryController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly CategoryService _categoryService;
 
-        public CategoryController(ApplicationDbContext context)
+        public CategoryController(CategoryService categoryService)
         {
-            _context = context;
+            _categoryService = categoryService;
         }
 
         // GET: Category
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Categories.ToListAsync());
+            var categories = await _categoryService.GetAllCategoriesAsync();
+            return View(categories);  
         }
 
         // GET: Category/Details/5
@@ -33,14 +28,16 @@ namespace EcomPulse.Web.Controllers
                 return NotFound();
             }
 
-            var category = await _context.Categories
-                .FirstOrDefaultAsync(m => m.Id == id);
+            // Fetch category by Id using the service
+            var category = await _categoryService.GetCategoryByIdAsync(id.Value);
             if (category == null)
             {
                 return NotFound();
             }
 
-            return View(category);
+            
+
+            return View(category); 
         }
 
         // GET: Category/Create
@@ -50,17 +47,13 @@ namespace EcomPulse.Web.Controllers
         }
 
         // POST: Category/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,Name")] Category category)
         {
             if (ModelState.IsValid)
             {
-                category.Id = Guid.NewGuid();
-                _context.Add(category);
-                await _context.SaveChangesAsync();
+                await _categoryService.AddCategoryAsync(category);
                 return RedirectToAction(nameof(Index));
             }
             return View(category);
@@ -74,7 +67,7 @@ namespace EcomPulse.Web.Controllers
                 return NotFound();
             }
 
-            var category = await _context.Categories.FindAsync(id);
+            var category = await _categoryService.GetCategoryByIdAsync(id.Value);
             if (category == null)
             {
                 return NotFound();
@@ -83,8 +76,6 @@ namespace EcomPulse.Web.Controllers
         }
 
         // POST: Category/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(Guid id, [Bind("Id,Name")] Category category)
@@ -96,22 +87,7 @@ namespace EcomPulse.Web.Controllers
 
             if (ModelState.IsValid)
             {
-                try
-                {
-                    _context.Update(category);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!CategoryExists(category.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+                await _categoryService.UpdateCategoryAsync(category);
                 return RedirectToAction(nameof(Index));
             }
             return View(category);
@@ -125,8 +101,7 @@ namespace EcomPulse.Web.Controllers
                 return NotFound();
             }
 
-            var category = await _context.Categories
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var category = await _categoryService.GetCategoryByIdAsync(id.Value);
             if (category == null)
             {
                 return NotFound();
@@ -140,19 +115,8 @@ namespace EcomPulse.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var category = await _context.Categories.FindAsync(id);
-            if (category != null)
-            {
-                _context.Categories.Remove(category);
-            }
-
-            await _context.SaveChangesAsync();
+            await _categoryService.DeleteCategoryAsync(id);
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool CategoryExists(Guid id)
-        {
-            return _context.Categories.Any(e => e.Id == id);
         }
     }
 }

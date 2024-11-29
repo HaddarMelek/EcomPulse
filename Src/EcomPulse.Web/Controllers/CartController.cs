@@ -1,12 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using EcomPulse.Web.Data;
+using EcomPulse.Web.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using EcomPulse.Web.Data;
-using EcomPulse.Web.Models;
 
 namespace EcomPulse.Web.Controllers
 {

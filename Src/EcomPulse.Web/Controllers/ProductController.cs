@@ -1,32 +1,25 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using EcomPulse.Web.Data;
-using EcomPulse.Web.Models;
+using EcomPulse.Web.Services;
 using EcomPulse.Web.ViewModel;
+using Microsoft.AspNetCore.Mvc;
 
 namespace EcomPulse.Web.Controllers
 {
     public class ProductController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly ProductService _productService;
+        private readonly ILogger<ProductController> _logger;
 
-        public ProductController(ApplicationDbContext context)
+        public ProductController(ILogger<ProductController> logger, ProductService productService)
         {
-            _context = context;
+            _productService = productService;
+            _logger = logger;
         }
 
         // GET: Product
         public async Task<IActionResult> Index()
         {
-            return View(await 
-                _context.Products
-                            .Include(p=>p.Category)
-                            .ToListAsync());
+            var products = await _productService.GetAllProductsAsync();
+            return View(products);
         }
 
         // GET: Product/Details/5
@@ -37,8 +30,7 @@ namespace EcomPulse.Web.Controllers
                 return NotFound();
             }
 
-            var product = await _context.Products
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var product = await _productService.GetProductByIdAsync(id.Value);
             if (product == null)
             {
                 return NotFound();
@@ -48,29 +40,45 @@ namespace EcomPulse.Web.Controllers
         }
 
         // GET: Product/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            var pvm = new ProductVM();
-            pvm.Categories = _context.Categories.ToList();
+            var pvm = new ProductVM
+            {
+                Categories = await _productService.GetAllCategoriesAsync()
+            };
 
             return View(pvm);
         }
 
         // POST: Product/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Name,Description,Price,ImageUrl,CategoryId")] Product product)
+        public async Task<IActionResult> Create(ProductVM pvm)
         {
             if (ModelState.IsValid)
             {
-                product.Id = Guid.NewGuid();
-                _context.Add(product);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                var result = await _productService.CreateProductAsync(pvm.Product.Name,
+                    pvm.Product.Description,
+                    pvm.Product.Price,
+                    pvm.Product.ImageUrl,
+                    pvm.Product.CategoryId
+                    );
+
+                return result ? RedirectToAction(nameof(Index)) : BadRequest(pvm);
             }
-            return View(product);
+            
+            _logger.LogInformation("Model is not valid. Errors : \n {errors}", 
+                string.Join(Environment.NewLine, 
+                    ModelState.Values
+                        .Where(v=>v.Errors.Any())
+                        .Select(v=> 
+                            $"{v.AttemptedValue} - {v.Errors.Select(e=> e.ErrorMessage).FirstOrDefault()?.ToString()}" 
+                        ).ToList()
+                ));
+
+
+            pvm.Categories = await _productService.GetAllCategoriesAsync();
+            return View(pvm);
         }
 
         // GET: Product/Edit/5
@@ -81,47 +89,48 @@ namespace EcomPulse.Web.Controllers
                 return NotFound();
             }
 
-            var product = await _context.Products.FindAsync(id);
+            var product = await _productService.GetProductByIdAsync(id.Value);
             if (product == null)
             {
                 return NotFound();
             }
-            return View(product);
+
+            var pvm = new ProductVM
+            {
+                Product = product,
+                Categories = await _productService.GetAllCategoriesAsync()
+            };
+
+            return View(pvm);
         }
 
         // POST: Product/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("Id,Name,Description,Price,ImageUrl,CategoryId")] Product product)
+        public async Task<IActionResult> Edit(Guid id, ProductVM pvm)
         {
-            if (id != product.Id)
+            if (id != pvm.Product.Id)
             {
                 return NotFound();
             }
 
             if (ModelState.IsValid)
             {
-                try
-                {
-                    _context.Update(product);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!ProductExists(product.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+                await _productService.UpdateProductAsync(pvm.Product);
                 return RedirectToAction(nameof(Index));
             }
-            return View(product);
+
+            _logger.LogInformation("Model is not valid. Errors : \n {errors}", 
+               string.Join(Environment.NewLine, 
+                   ModelState.Values
+                       .Where(v=>v.Errors.Any())
+                       .Select(v=> 
+                           $"{v.AttemptedValue} - {v.Errors.Select(e=> e.ErrorMessage).FirstOrDefault()?.ToString()}" 
+                       ).ToList()
+                   ));
+
+            pvm.Categories = await _productService.GetAllCategoriesAsync();
+            return View(pvm);
         }
 
         // GET: Product/Delete/5
@@ -132,14 +141,18 @@ namespace EcomPulse.Web.Controllers
                 return NotFound();
             }
 
-            var product = await _context.Products
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var product = await _productService.GetProductByIdAsync(id.Value);
             if (product == null)
             {
                 return NotFound();
             }
 
-            return View(product);
+            var productVm = new ProductVM
+            {
+                Product = product
+            };
+            
+            return View(productVm);
         }
 
         // POST: Product/Delete/5
@@ -147,19 +160,8 @@ namespace EcomPulse.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var product = await _context.Products.FindAsync(id);
-            if (product != null)
-            {
-                _context.Products.Remove(product);
-            }
-
-            await _context.SaveChangesAsync();
+            await _productService.DeleteProductAsync(id);
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool ProductExists(Guid id)
-        {
-            return _context.Products.Any(e => e.Id == id);
         }
     }
 }
