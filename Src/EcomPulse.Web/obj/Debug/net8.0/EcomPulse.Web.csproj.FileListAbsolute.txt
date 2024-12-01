@@ -284,3 +284,4 @@
 /Users/macbook/Dotnet/EcomPulse/Src/EcomPulse.Web/bin/Debug/net8.0/runtimes/win/lib/net7.0/System.Drawing.Common.dll
 /Users/macbook/Dotnet/EcomPulse/Src/EcomPulse.Web/bin/Debug/net8.0/runtimes/win/lib/net7.0/System.Security.Cryptography.ProtectedData.dll
 /Users/macbook/Dotnet/EcomPulse/Src/EcomPulse.Web/bin/Debug/net8.0/runtimes/win/lib/net7.0/System.Windows.Extensions.dll
+/Users/macbook/Dotnet/EcomPulse/Src/EcomPulse.Web/obj/Debug/net8.0/EcomPulse.Web.sourcelink.json

@@ -23,7 +23,7 @@ namespace EcomPulse.Web.Models
         [MinLength(8, ErrorMessage = "Password must be at least 8 characters long.")]
         public required string Password { get; set; }
 
-        public required ICollection<Order> Orders { get; set; }
-        public required ICollection<Cart> Carts { get; set; }
+        public virtual ICollection<Order> Orders { get; set; }
+        public virtual ICollection<Cart> Carts { get; set; }
     }
 }
