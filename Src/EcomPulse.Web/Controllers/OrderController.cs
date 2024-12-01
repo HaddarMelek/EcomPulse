@@ -22,7 +22,7 @@ namespace EcomPulse.Web.Controllers
         // GET: Order
         public async Task<IActionResult> Index()
         {
-            var applicationDbContext = _context.Order.Include(o => o.User);
+            var applicationDbContext = _context.Orders.Include(o => o.User);
             return View(await applicationDbContext.ToListAsync());
         }
 
@@ -34,7 +34,7 @@ namespace EcomPulse.Web.Controllers
                 return NotFound();
             }
 
-            var order = await _context.Order
+            var order = await _context.Orders
                 .Include(o => o.User)
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (order == null)
@@ -78,7 +78,7 @@ namespace EcomPulse.Web.Controllers
                 return NotFound();
             }
 
-            var order = await _context.Order.FindAsync(id);
+            var order = await _context.Orders.FindAsync(id);
             if (order == null)
             {
                 return NotFound();
@@ -131,7 +131,7 @@ namespace EcomPulse.Web.Controllers
                 return NotFound();
             }
 
-            var order = await _context.Order
+            var order = await _context.Orders
                 .Include(o => o.User)
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (order == null)
@@ -147,10 +147,10 @@ namespace EcomPulse.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var order = await _context.Order.FindAsync(id);
+            var order = await _context.Orders.FindAsync(id);
             if (order != null)
             {
-                _context.Order.Remove(order);
+                _context.Orders.Remove(order);
             }
 
             await _context.SaveChangesAsync();
@@ -159,7 +159,7 @@ namespace EcomPulse.Web.Controllers
 
         private bool OrderExists(Guid id)
         {
-            return _context.Order.Any(e => e.Id == id);
+            return _context.Orders.Any(e => e.Id == id);
         }
     }
 }

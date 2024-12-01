@@ -1,46 +1,54 @@
-@model EcomPulse.Web.Models.Order
+@model EcomPulse.Web.ViewModel.OrderVM
 
 @{
-    ViewData["Title"] = "Create";
+    ViewData["Title"] = "Create Order";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<h1>Create</h1>
+<h1>Create Order</h1>
 
-<h4>Order</h4>
+<h4>Order Details</h4>
 <hr />
 <div class="row">
-    <div class="col-md-4">
-        <form asp-action="Create">
+    <div class="col-md-6">
+        <form asp-action="Create" method="post">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <!-- User Dropdown -->
             <div class="form-group">
                 <label asp-for="UserId" class="control-label"></label>
-                <select asp-for="UserId" class ="form-control" asp-items="ViewBag.UserId"></select>
+                <select asp-for="UserId" class="form-control" asp-items="ViewBag.UserId"></select>
+                <span asp-validation-for="UserId" class="text-danger"></span>
             </div>
+
+            <!-- Total -->
             <div class="form-group">
                 <label asp-for="Total" class="control-label"></label>
                 <input asp-for="Total" class="form-control" />
                 <span asp-validation-for="Total" class="text-danger"></span>
             </div>
+
+            <!-- Order Date -->
             <div class="form-group">
                 <label asp-for="OrderDate" class="control-label"></label>
-                <input asp-for="OrderDate" class="form-control" />
+                <input asp-for="OrderDate" class="form-control" type="date" />
                 <span asp-validation-for="OrderDate" class="text-danger"></span>
             </div>
+
+            <!-- Shipping Address -->
             <div class="form-group">
                 <label asp-for="ShippingAddress" class="control-label"></label>
                 <input asp-for="ShippingAddress" class="form-control" />
                 <span asp-validation-for="ShippingAddress" class="text-danger"></span>
             </div>
+
+            <!-- Submit Button -->
             <div class="form-group">
-                <input type="submit" value="Create" class="btn btn-primary" />
+                <button type="submit" class="btn btn-primary">Create</button>
+                <a asp-action="Index" class="btn btn-secondary">Cancel</a>
             </div>
         </form>
     </div>
-</div>
-
-<div>
-    <a asp-action="Index">Back to List</a>
 </div>
 
 @section Scripts {

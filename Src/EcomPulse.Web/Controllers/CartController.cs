@@ -22,7 +22,7 @@ namespace EcomPulse.Web.Controllers
         // GET: Cart
         public async Task<IActionResult> Index()
         {
-            var applicationDbContext = _context.Cart.Include(c => c.User);
+            var applicationDbContext = _context.Carts.Include(c => c.User);
             return View(await applicationDbContext.ToListAsync());
         }
 
@@ -34,7 +34,7 @@ namespace EcomPulse.Web.Controllers
                 return NotFound();
             }
 
-            var cart = await _context.Cart
+            var cart = await _context.Carts
                 .Include(c => c.User)
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (cart == null)
@@ -78,7 +78,7 @@ namespace EcomPulse.Web.Controllers
                 return NotFound();
             }
 
-            var cart = await _context.Cart.FindAsync(id);
+            var cart = await _context.Carts.FindAsync(id);
             if (cart == null)
             {
                 return NotFound();
@@ -131,7 +131,7 @@ namespace EcomPulse.Web.Controllers
                 return NotFound();
             }
 
-            var cart = await _context.Cart
+            var cart = await _context.Carts
                 .Include(c => c.User)
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (cart == null)
@@ -147,10 +147,10 @@ namespace EcomPulse.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var cart = await _context.Cart.FindAsync(id);
+            var cart = await _context.Carts.FindAsync(id);
             if (cart != null)
             {
-                _context.Cart.Remove(cart);
+                _context.Carts.Remove(cart);
             }
 
             await _context.SaveChangesAsync();
@@ -159,7 +159,7 @@ namespace EcomPulse.Web.Controllers
 
         private bool CartExists(Guid id)
         {
-            return _context.Cart.Any(e => e.Id == id);
+            return _context.Carts.Any(e => e.Id == id);
         }
     }
 }

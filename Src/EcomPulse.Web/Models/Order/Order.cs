@@ -4,6 +4,7 @@ namespace EcomPulse.Web.Models
 {
     public class Order
     {
+
         public Order()
         {
             OrderItems = new List<OrderItem>();
@@ -23,6 +24,8 @@ namespace EcomPulse.Web.Models
         [Required]
         [MaxLength(500)]
         public required string ShippingAddress { get; set; }
+        
+        public string Status { get; set; } = "Pending";
 
         public required ICollection<OrderItem> OrderItems { get; set; }
     }

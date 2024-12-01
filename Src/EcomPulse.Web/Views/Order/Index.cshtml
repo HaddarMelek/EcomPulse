@@ -1,54 +1,63 @@
-@model IEnumerable<EcomPulse.Web.Models.Order>
+@model EcomPulse.Web.ViewModel.OrderVM
+
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Edit Order";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<h1>Index</h1>
+<h1>Edit Order</h1>
+<hr />
+<div class="row">
+    <div class="col-md-6">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="Id" />
+            ,
+            
+            <!-- User Dropdown -->
+            <div class="form-group">
+                <label asp-for="UserId" class="control-label"></label>
+                <select asp-for="UserId" class="form-control" asp-items="ViewBag.Users"></select>
+                <span asp-validation-for="UserId" class="text-danger"></span>
+            </div>
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.User)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Total)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.OrderDate)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.ShippingAddress)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.User.Id)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Total)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.OrderDate)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.ShippingAddress)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-            </td>
-        </tr>
+            <!-- Total -->
+            <div class="form-group">
+                <label asp-for="Total" class="control-label"></label>
+                <input asp-for="Total" class="form-control" />
+                <span asp-validation-for="Total" class="text-danger"></span>
+            </div>
+
+            <!-- Order Date -->
+            <div class="form-group">
+                <label asp-for="OrderDate" class="control-label"></label>
+                <input asp-for="OrderDate" class="form-control" type="datetime-local" />
+                <span asp-validation-for="OrderDate" class="text-danger"></span>
+            </div>
+
+            <!-- Shipping Address -->
+            <div class="form-group">
+                <label asp-for="ShippingAddress" class="control-label"></label>
+                <input asp-for="ShippingAddress" class="form-control" />
+                <span asp-validation-for="ShippingAddress" class="text-danger"></span>
+            </div>
+
+            <!-- Status -->
+            <div class="form-group">
+                <label asp-for="Status" class="control-label"></label>
+                <input asp-for="Status" class="form-control" />
+                <span asp-validation-for="Status" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <input type="submit" value="Save" class="btn btn-primary" />
+                <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
 }
-    </tbody>
-</table>
