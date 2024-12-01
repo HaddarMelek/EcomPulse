@@ -17,5 +17,5 @@ namespace EcomPulse.Web.Models;
         public  string? ImageUrl { get; set; }
         public  Guid CategoryId { get; set; }
 
-        public virtual Category? Category { get; set; }
+        public virtual Category Category { get; set; }
     }

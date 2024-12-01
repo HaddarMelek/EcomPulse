@@ -16,7 +16,7 @@ namespace EcomPulse.Web.ViewModel.Product
         public decimal Price { get; set; }
         public string? ImageUrl { get; set; }
         public Guid CategoryId { get; set; }
-        public string? CategoryName { get; set; }
+        public string CategoryName { get; set; }
         public IList<CategoryVM> Categories { get; set; }
     }
 }

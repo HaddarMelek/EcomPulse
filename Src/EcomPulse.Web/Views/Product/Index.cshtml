@@ -31,17 +31,9 @@
             <td>@Html.DisplayFor(modelItem => item.Description)</td>
             <td>@Html.DisplayFor(modelItem => item.Price)</td>
             <td>@Html.DisplayFor(modelItem => item.ImageUrl)</td>
-            <td>
-                @foreach (var category in item.Categories)
-                {
-                    if (category.Id == item.CategoryId)
-                    {
-                        <span>@category.Name</span>  
-                        break; 
-                    }
+            <td>@Html.DisplayFor(modelItem => item.CategoryName)</td>
 
-                }
-            </td>
+            
             <td>
                 <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
                 <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
