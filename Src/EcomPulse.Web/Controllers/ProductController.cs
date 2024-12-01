@@ -1,103 +1,201 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using EcomPulse.Web.Services;
+using EcomPulse.Web.ViewModel.Product;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using EcomPulse.Web.Data;
-using EcomPulse.Web.Models;
-using EcomPulse.Web.ViewModel;
 
 namespace EcomPulse.Web.Controllers
 {
     public class ProductController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly ProductService _productService;
+        private readonly ILogger<ProductController> _logger;
 
-        public ProductController(ApplicationDbContext context)
+        public ProductController(ILogger<ProductController> logger, ProductService productService)
         {
-            _context = context;
+            _productService = productService;
+            _logger = logger;
         }
 
-        // GET: Product
         public async Task<IActionResult> Index()
         {
-            return View(await 
-                _context.Products
-                            .Include(p=>p.Category)
-                            .ToListAsync());
+            try
+            {
+                var products = await _productService.GetAllProductsAsync();
+                var productVMs = products.Select(product => new ProductVM
+                {
+                    Id = product.Id,
+                    Name = product.Name,
+                    Description = product.Description,
+                    Price = product.Price,
+                    ImageUrl = product.ImageUrl,
+                    CategoryId = product.CategoryId,
+                    CategoryName = product.Category.Name,
+
+                   
+
+                }).ToList();
+
+                _logger.LogInformation("Retrieved {Count} products successfully.", products.Count);
+                return View(productVMs);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while retrieving products.");
+                return StatusCode(500, "Internal server error");
+            }
         }
 
-        // GET: Product/Details/5
         public async Task<IActionResult> Details(Guid? id)
         {
             if (id == null)
             {
+                _logger.LogWarning("Details called with null ID.");
                 return NotFound();
             }
 
-            var product = await _context.Products
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (product == null)
+            try
             {
-                return NotFound();
+                var product = await _productService.GetProductByIdAsync(id.Value);
+                if (product == null)
+                {
+                    _logger.LogWarning("Product with ID {Id} not found.", id);
+                    return NotFound();
+                }
+
+                var productVm = new ProductVM
+                {
+                    Id = id.Value,
+                    Name = product.Name,
+                    Description = product.Description,
+                    Price = product.Price,
+                    ImageUrl = product.ImageUrl,
+                    CategoryId = product.CategoryId,
+                    CategoryName = product.Category?.Name,
+                };
+
+                _logger.LogInformation("Retrieved details for product ID {Id}.", id);
+                return View(productVm);
             }
-
-            return View(product);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while retrieving details for product ID {Id}.", id);
+                return StatusCode(500, "Internal server error");
+            }
         }
 
-        // GET: Product/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            var pvm = new ProductVM();
-            pvm.Categories = _context.Categories.ToList();
+            try
+            {
+                var pvm = new ProductVM
+                {
+                    Categories = (await _productService.GetAllCategoriesAsync())
+                        .Select(c => new CategoryVM
+                        {
+                            Id = c.Id,
+                            Name = c.Name
+                        })
+                        .ToList()
+                };
 
-            return View(pvm);
+                _logger.LogInformation("Prepared product creation view.");
+                return View(pvm);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while preparing the product creation view.");
+                return StatusCode(500, "Internal server error");
+            }
         }
 
-        // POST: Product/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Name,Description,Price,ImageUrl,CategoryId")] Product product)
+        public async Task<IActionResult> Create(ProductVM productVm)
         {
             if (ModelState.IsValid)
             {
-                product.Id = Guid.NewGuid();
-                _context.Add(product);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                try
+                {
+                    var result = await _productService.CreateProductAsync(
+                        productVm.Name,
+                        productVm.Description,
+                        productVm.Price,
+                        productVm.ImageUrl,
+                        productVm.CategoryId
+                    );
+
+                    if (result)
+                    {
+                        _logger.LogInformation("Product created successfully: {Name}.", productVm.Name);
+                        return RedirectToAction(nameof(Index));
+                    }
+
+                    _logger.LogWarning("Failed to create product: {Name}.", productVm.Name);
+                    return BadRequest(productVm);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "An error occurred while creating product: {Name}.", productVm.Name);
+                    return StatusCode(500, "Internal server error");
+                }
             }
-            return View(product);
+
+            _logger.LogWarning("Invalid model state while creating product: {Name}.", productVm.Name);
+            
+
+            return View(productVm);
         }
 
-        // GET: Product/Edit/5
         public async Task<IActionResult> Edit(Guid? id)
         {
             if (id == null)
             {
+                _logger.LogWarning("Edit called with null ID.");
                 return NotFound();
             }
 
-            var product = await _context.Products.FindAsync(id);
-            if (product == null)
+            try
             {
-                return NotFound();
+                var product = await _productService.GetProductByIdAsync(id.Value);
+                if (product == null)
+                {
+                    _logger.LogWarning("Product with ID {Id} not found.", id);
+                    return NotFound();
+                }
+
+                var productVm = new ProductVM
+                {
+                    Name = product.Name,
+                    Description = product.Description,
+                    Price = product.Price,
+                    ImageUrl = product.ImageUrl,
+                    CategoryId = product.CategoryId,
+                    CategoryName = product.Category?.Name,
+                    Categories = (await _productService.GetAllCategoriesAsync())
+                        .Select(c => new CategoryVM
+                        {
+                            Id = c.Id,
+                            Name = c.Name
+                        })
+                        .ToList()
+                };
+
+                _logger.LogInformation("Prepared edit view for product ID {Id}.", id);
+                return View(productVm);
             }
-            return View(product);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while preparing the edit view for product ID {Id}.", id);
+                return StatusCode(500, "Internal server error");
+            }
         }
 
-        // POST: Product/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("Id,Name,Description,Price,ImageUrl,CategoryId")] Product product)
+        public async Task<IActionResult> Edit(Guid id, ProductVM productVm)
         {
-            if (id != product.Id)
+            if (id != productVm.Id)
             {
+                _logger.LogWarning("Edit called with mismatched IDs. Route ID: {RouteId}, Model ID: {ModelId}.", id, productVm.Id);
                 return NotFound();
             }
 
@@ -105,61 +203,85 @@ namespace EcomPulse.Web.Controllers
             {
                 try
                 {
-                    _context.Update(product);
-                    await _context.SaveChangesAsync();
+                    await _productService.UpdateProductAsync(
+                        id,
+                        productVm.Name,
+                        productVm.Description,
+                        productVm.Price,
+                        productVm.ImageUrl,
+                        productVm.CategoryId,
+                        productVm.CategoryName
+                    );
+
+                    _logger.LogInformation("Updated product successfully: ID {Id}.", id);
+                    return RedirectToAction(nameof(Index));
                 }
-                catch (DbUpdateConcurrencyException)
+                catch (Exception ex)
                 {
-                    if (!ProductExists(product.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    _logger.LogError(ex, "An error occurred while updating product: ID {Id}.", id);
+                    return StatusCode(500, "Internal server error");
                 }
-                return RedirectToAction(nameof(Index));
             }
-            return View(product);
+
+            _logger.LogWarning("Invalid model state while updating product: ID {Id}.", id);
+            
+            return View(productVm);
         }
 
-        // GET: Product/Delete/5
         public async Task<IActionResult> Delete(Guid? id)
         {
             if (id == null)
             {
+                _logger.LogWarning("Delete called with null ID.");
                 return NotFound();
             }
 
-            var product = await _context.Products
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (product == null)
+            try
             {
-                return NotFound();
-            }
+                var product = await _productService.GetProductByIdAsync(id.Value);
+                if (product == null)
+                {
+                    _logger.LogWarning("Product with ID {Id} not found.", id);
+                    return NotFound();
+                }
 
-            return View(product);
+                var productVm = new ProductVM
+                {
+                    Name = product.Name,
+                    Description = product.Description,
+                    Price = product.Price,
+                    ImageUrl = product.ImageUrl,
+                    CategoryId = product.CategoryId,
+                    CategoryName = product.Category?.Name,
+
+                   
+                };
+
+                _logger.LogInformation("Prepared delete view for product ID {Id}.", id);
+                return View(productVm);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while preparing the delete view for product ID {Id}.", id);
+                return StatusCode(500, "Internal server error");
+            }
         }
 
-        // POST: Product/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var product = await _context.Products.FindAsync(id);
-            if (product != null)
+            try
             {
-                _context.Products.Remove(product);
+                await _productService.DeleteProductAsync(id);
+                _logger.LogInformation("Deleted product successfully: ID {Id}.", id);
+                return RedirectToAction(nameof(Index));
             }
-
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
-        }
-
-        private bool ProductExists(Guid id)
-        {
-            return _context.Products.Any(e => e.Id == id);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while deleting product: ID {Id}.", id);
+                return StatusCode(500, "Internal server error");
+            }
         }
     }
 }

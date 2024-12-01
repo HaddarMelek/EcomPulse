@@ -2,11 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using EcomPulse.Web.Data;
+using EcomPulse.Web.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using EcomPulse.Web.Data;
-using EcomPulse.Web.Models;
 
 namespace EcomPulse.Web.Controllers
 {
@@ -22,7 +22,7 @@ namespace EcomPulse.Web.Controllers
         // GET: User
         public async Task<IActionResult> Index()
         {
-            return View(await _context.User.ToListAsync());
+            return View(await _context.Users.ToListAsync());
         }
 
         // GET: User/Details/5
@@ -33,7 +33,7 @@ namespace EcomPulse.Web.Controllers
                 return NotFound();
             }
 
-            var user = await _context.User
+            var user = await _context.Users
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (user == null)
             {
@@ -74,7 +74,7 @@ namespace EcomPulse.Web.Controllers
                 return NotFound();
             }
 
-            var user = await _context.User.FindAsync(id);
+            var user = await _context.Users.FindAsync(id);
             if (user == null)
             {
                 return NotFound();
@@ -125,7 +125,7 @@ namespace EcomPulse.Web.Controllers
                 return NotFound();
             }
 
-            var user = await _context.User
+            var user = await _context.Users
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (user == null)
             {
@@ -140,10 +140,10 @@ namespace EcomPulse.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var user = await _context.User.FindAsync(id);
+            var user = await _context.Users.FindAsync(id);
             if (user != null)
             {
-                _context.User.Remove(user);
+                _context.Users.Remove(user);
             }
 
             await _context.SaveChangesAsync();
@@ -152,7 +152,7 @@ namespace EcomPulse.Web.Controllers
 
         private bool UserExists(Guid id)
         {
-            return _context.User.Any(e => e.Id == id);
+            return _context.Users.Any(e => e.Id == id);
         }
     }
 }

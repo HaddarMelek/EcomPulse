@@ -1,96 +1,150 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using EcomPulse.Web.ViewModel.Product;
+using EcomPulse.Web.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using EcomPulse.Web.Data;
-using EcomPulse.Web.Models;
 
 namespace EcomPulse.Web.Controllers
 {
     public class CategoryController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly ProductService _productService;
+        private readonly ILogger<CategoryController> _logger;
 
-        public CategoryController(ApplicationDbContext context)
+        public CategoryController(
+            ILogger<CategoryController> logger, 
+            ProductService productService)
         {
-            _context = context;
+            _productService = productService;
+            _logger = logger;
         }
 
-        // GET: Category
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Categories.ToListAsync());
+            try
+            {
+                var categories = await _productService.GetAllCategoriesAsync();
+
+                _logger.LogInformation("Fetched {Count} categories successfully.", categories.Count);
+
+                var categoryVMs = categories.Select(c => new CategoryVM 
+                {
+                    Id = c.Id,      
+                    Name = c.Name   
+                }).ToList();
+
+                return View(categoryVMs);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while fetching categories.");
+                return View("Error");
+            }
         }
 
-        // GET: Category/Details/5
         public async Task<IActionResult> Details(Guid? id)
         {
             if (id == null)
             {
+                _logger.LogError("Details called with null ID.");
                 return NotFound();
             }
 
-            var category = await _context.Categories
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (category == null)
+            try
             {
-                return NotFound();
-            }
+                var category = await _productService.GetCategroyById(id.Value);
 
-            return View(category);
+                if (category == null)
+                {
+                    _logger.LogWarning("Category with ID {Id} not found.", id.Value);
+                    return NotFound();
+                }
+
+                var categoryVm = new CategoryVM
+                {
+                    Id = category.Id,
+                    Name = category.Name
+                };
+
+                _logger.LogInformation("Fetched details for category with ID {Id}.", id.Value);
+
+                return View(categoryVm);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while fetching category details for ID {Id}.", id);
+                return View("Error");
+            }
         }
 
-        // GET: Category/Create
         public IActionResult Create()
         {
             return View();
         }
 
-        // POST: Category/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Name")] Category category)
+        public async Task<IActionResult> Create([Bind("Id,Name")] CategoryVM categoryVm)
         {
             if (ModelState.IsValid)
             {
-                category.Id = Guid.NewGuid();
-                _context.Add(category);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                try
+                {
+                    await _productService.AddCategoryAsync(categoryVm.Name);
+                    _logger.LogInformation("Category {Name} created successfully.", categoryVm.Name);
+                    return RedirectToAction(nameof(Index));
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "An error occurred while creating category {Name}.", categoryVm.Name);
+                    return View("Error");
+                }
             }
-            return View(category);
+            return View(categoryVm);
         }
 
-        // GET: Category/Edit/5
         public async Task<IActionResult> Edit(Guid? id)
         {
             if (id == null)
             {
+                _logger.LogError("Edit called with null ID.");
                 return NotFound();
             }
 
-            var category = await _context.Categories.FindAsync(id);
-            if (category == null)
+            try
             {
-                return NotFound();
+                var category = await _productService.GetCategroyById(id.Value);
+
+                if (category == null)
+                {
+                    _logger.LogWarning("Category with ID {Id} not found for edit.", id.Value);
+                    return NotFound();
+                }
+
+                var categoryVm = new CategoryVM()
+                {
+                    Id = category.Id,
+                    Name = category.Name
+                };
+
+                _logger.LogInformation("Fetched category with ID {Id} for edit.", id.Value);
+
+                return View(categoryVm);
             }
-            return View(category);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while fetching category for edit with ID {Id}.", id);
+                return View("Error");
+            }
         }
 
-        // POST: Category/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("Id,Name")] Category category)
+        public async Task<IActionResult> Edit(Guid id, [Bind("Id,Name")] CategoryVM categoryVm)
         {
-            if (id != category.Id)
+            CancellationToken cancellationToken = default;
+
+            if (id != categoryVm.Id)
             {
+                _logger.LogError("Edit called with mismatched ID {Id}.", id);
                 return NotFound();
             }
 
@@ -98,61 +152,70 @@ namespace EcomPulse.Web.Controllers
             {
                 try
                 {
-                    _context.Update(category);
-                    await _context.SaveChangesAsync();
+                    await _productService.UpdateCategoryAsync(categoryVm, cancellationToken);
+                    _logger.LogInformation("Category with ID {Id} updated successfully.", id);
+                    return RedirectToAction(nameof(Index));
                 }
-                catch (DbUpdateConcurrencyException)
+                catch (Exception ex)
                 {
-                    if (!CategoryExists(category.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    _logger.LogError(ex, "An error occurred while updating category with ID {Id}.", id);
+                    return View("Error");
                 }
-                return RedirectToAction(nameof(Index));
             }
-            return View(category);
+
+            return View(categoryVm);
         }
 
-        // GET: Category/Delete/5
         public async Task<IActionResult> Delete(Guid? id)
         {
             if (id == null)
             {
+                _logger.LogError("Delete called with null ID.");
                 return NotFound();
             }
 
-            var category = await _context.Categories
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (category == null)
+            try
             {
-                return NotFound();
-            }
+                var category = await _productService.GetCategroyById(id.Value);
 
-            return View(category);
+                if (category == null)
+                {
+                    _logger.LogWarning("Category with ID {Id} not found for deletion.", id.Value);
+                    return NotFound();
+                }
+
+                var categoryVm = new CategoryVM()
+                {
+                    Id = category.Id,
+                    Name = category.Name
+                };
+
+                _logger.LogInformation("Fetched category with ID {Id} for deletion.", id.Value);
+
+                return View(categoryVm);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while fetching category for deletion with ID {Id}.", id);
+                return View("Error");
+            }
         }
 
-        // POST: Category/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var category = await _context.Categories.FindAsync(id);
-            if (category != null)
+            try
             {
-                _context.Categories.Remove(category);
+                await _productService.DeleteCategoryAsync(id);
+                _logger.LogInformation("Category with ID {Id} deleted successfully.", id);
+                return RedirectToAction(nameof(Index));
             }
-
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
-        }
-
-        private bool CategoryExists(Guid id)
-        {
-            return _context.Categories.Any(e => e.Id == id);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while deleting category with ID {Id}.", id);
+                return View("Error");
+            }
         }
     }
 }
