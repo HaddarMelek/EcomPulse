@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using EcomPulse.Web.Data;
+using EcomPulse.Web.Models;
 using EcomPulse.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,7 +11,11 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
 
+builder.Services.AddScoped<ApplicationDbContext>();
+
 builder.Services.AddScoped<ProductService>();
+//builder.Services.AddScoped<OrderService>();
+//builder.Services.AddScoped<CartService>();
 
 var app = builder.Build();
 

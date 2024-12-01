@@ -1,4 +1,4 @@
-using EcomPulse.Web.Models;
+using EcomPulse.Web.ViewModel.Product;
 using EcomPulse.Web.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -6,21 +6,30 @@ namespace EcomPulse.Web.Controllers
 {
     public class CategoryController : Controller
     {
-        private readonly CategoryService _categoryService;
+        private readonly ProductService _productService;
+        private readonly ILogger<CategoryController> _logger;
 
-        public CategoryController(CategoryService categoryService)
+        public CategoryController(
+            ILogger<CategoryController> logger, 
+            ProductService productService)
         {
-            _categoryService = categoryService;
+            _productService = productService;
+            _logger = logger;
         }
 
-        // GET: Category
         public async Task<IActionResult> Index()
         {
-            var categories = await _categoryService.GetAllCategoriesAsync();
-            return View(categories);  
+            var categories = await _productService.GetAllCategoriesAsync();
+
+            var categoryVMs = categories.Select(c => new CategoryVM 
+            {
+                Id = c.Id,      
+                Name = c.Name   
+            }).ToList();
+
+            return View(categoryVMs);
         }
 
-        // GET: Category/Details/5
         public async Task<IActionResult> Details(Guid? id)
         {
             if (id == null)
@@ -28,38 +37,38 @@ namespace EcomPulse.Web.Controllers
                 return NotFound();
             }
 
-            // Fetch category by Id using the service
-            var category = await _categoryService.GetCategoryByIdAsync(id.Value);
+            var category = await _productService.GetCategroyById(id.Value);
             if (category == null)
             {
                 return NotFound();
             }
 
-            
+            var categoryVM = new CategoryVM
+            {
+                Id = category.Id,
+                Name = category.Name
+            };
 
-            return View(category); 
+            return View(categoryVM);
         }
 
-        // GET: Category/Create
         public IActionResult Create()
         {
             return View();
         }
 
-        // POST: Category/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Name")] Category category)
+        public async Task<IActionResult> Create([Bind("Id,Name")] CategoryVM categoryVM)
         {
             if (ModelState.IsValid)
             {
-                await _categoryService.AddCategoryAsync(category);
+                await _productService.AddCategoryAsync(categoryVM.Name);
                 return RedirectToAction(nameof(Index));
             }
-            return View(category);
+            return View(categoryVM);
         }
 
-        // GET: Category/Edit/5
         public async Task<IActionResult> Edit(Guid? id)
         {
             if (id == null)
@@ -67,33 +76,45 @@ namespace EcomPulse.Web.Controllers
                 return NotFound();
             }
 
-            var category = await _categoryService.GetCategoryByIdAsync(id.Value);
+            var category = await _productService.GetCategroyById(id.Value);
             if (category == null)
             {
                 return NotFound();
             }
-            return View(category);
+
+            var categoryVM = new CategoryVM()
+            {
+                Id = category.Id,
+                Name = category.Name
+            };
+
+            return View(categoryVM);
         }
 
-        // POST: Category/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("Id,Name")] Category category)
+        public async Task<IActionResult> Edit(Guid id, [Bind("Id,Name")] CategoryVM categoryVM)
         {
-            if (id != category.Id)
+            if (id != categoryVM.Id)
             {
                 return NotFound();
             }
 
             if (ModelState.IsValid)
             {
-                await _categoryService.UpdateCategoryAsync(category);
+                var category = new CategoryVM
+                {
+                    Id = categoryVM.Id,
+                    Name = categoryVM.Name
+                };
+
+                //await _productService.UpdateCategoryAsync(category);
                 return RedirectToAction(nameof(Index));
             }
-            return View(category);
+
+            return View(categoryVM);
         }
 
-        // GET: Category/Delete/5
         public async Task<IActionResult> Delete(Guid? id)
         {
             if (id == null)
@@ -101,21 +122,26 @@ namespace EcomPulse.Web.Controllers
                 return NotFound();
             }
 
-            var category = await _categoryService.GetCategoryByIdAsync(id.Value);
+            var category = await _productService.GetCategroyById(id.Value);
             if (category == null)
             {
                 return NotFound();
             }
 
-            return View(category);
+            var categoryVM = new CategoryVM()
+            {
+                Id = category.Id,
+                Name = category.Name
+            };
+
+            return View(categoryVM);
         }
 
-        // POST: Category/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            await _categoryService.DeleteCategoryAsync(id);
+            //await _productService.deletobehere(id);
             return RedirectToAction(nameof(Index));
         }
     }

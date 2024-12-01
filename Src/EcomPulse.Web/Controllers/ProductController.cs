@@ -1,5 +1,5 @@
 using EcomPulse.Web.Services;
-using EcomPulse.Web.ViewModel;
+using EcomPulse.Web.ViewModel.Product;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EcomPulse.Web.Controllers
@@ -15,14 +15,31 @@ namespace EcomPulse.Web.Controllers
             _logger = logger;
         }
 
-        // GET: Product
         public async Task<IActionResult> Index()
         {
             var products = await _productService.GetAllProductsAsync();
-            return View(products);
+            var categories =await _productService.GetAllCategoriesAsync(); 
+            var productVMs = products.Select(product => new ProductVM
+            {
+                Id = product.Id,
+                Name = product.Name,
+                Description = product.Description,
+                Price = product.Price,
+                ImageUrl = product.ImageUrl,
+                CategoryId = product.CategoryId,
+                CategoryName = product.Category?.Name,
+
+                Categories = categories.Select(category => new CategoryVM
+                {
+                    Id = category.Id,
+                    Name = category.Name
+                }).ToList()
+                
+            }).ToList();
+
+            return View(productVMs);
         }
 
-        // GET: Product/Details/5
         public async Task<IActionResult> Details(Guid? id)
         {
             if (id == null)
@@ -36,52 +53,66 @@ namespace EcomPulse.Web.Controllers
                 return NotFound();
             }
 
-            return View(product);
+            var productVm = new ProductVM
+            {
+                Id = id.Value,
+                Name = product.Name,
+                Description = product.Description,
+                Price = product.Price,
+                ImageUrl = product.ImageUrl,
+                CategoryId = product.CategoryId,
+                CategoryName = product.Category?.Name,
+                Categories = new List<CategoryVM>() 
+            };
+
+            return View(productVm);
         }
 
-        // GET: Product/Create
         public async Task<IActionResult> Create()
         {
             var pvm = new ProductVM
             {
-                Categories = await _productService.GetAllCategoriesAsync()
+                
+                Categories = (await _productService.GetAllCategoriesAsync())
+                    .Select(c => new CategoryVM
+                    {
+                        Id = c.Id,
+                        Name = c.Name
+                    })
+                    .ToList()
             };
 
             return View(pvm);
         }
 
-        // POST: Product/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(ProductVM pvm)
+        public async Task<IActionResult> Create(ProductVM productVm)
         {
             if (ModelState.IsValid)
             {
-                var result = await _productService.CreateProductAsync(pvm.Product.Name,
-                    pvm.Product.Description,
-                    pvm.Product.Price,
-                    pvm.Product.ImageUrl,
-                    pvm.Product.CategoryId
-                    );
+                var result = await _productService.CreateProductAsync(
+                    productVm.Name,
+                    productVm.Description,
+                    productVm.Price,
+                    productVm.ImageUrl,
+                    productVm.CategoryId
+                );
 
-                return result ? RedirectToAction(nameof(Index)) : BadRequest(pvm);
+                return result ? RedirectToAction(nameof(Index)) : BadRequest(productVm);
             }
-            
-            _logger.LogInformation("Model is not valid. Errors : \n {errors}", 
-                string.Join(Environment.NewLine, 
-                    ModelState.Values
-                        .Where(v=>v.Errors.Any())
-                        .Select(v=> 
-                            $"{v.AttemptedValue} - {v.Errors.Select(e=> e.ErrorMessage).FirstOrDefault()?.ToString()}" 
-                        ).ToList()
-                ));
 
+            productVm.Categories = (await _productService.GetAllCategoriesAsync())
+                .Select(c => new CategoryVM
+                {
+                    Id = c.Id,
+                    Name = c.Name
+                })
+                .ToList();
 
-            pvm.Categories = await _productService.GetAllCategoriesAsync();
-            return View(pvm);
+            return View(productVm);
         }
 
-        // GET: Product/Edit/5
         public async Task<IActionResult> Edit(Guid? id)
         {
             if (id == null)
@@ -95,45 +126,60 @@ namespace EcomPulse.Web.Controllers
                 return NotFound();
             }
 
-            var pvm = new ProductVM
+            var productVm = new ProductVM
             {
-                Product = product,
-                Categories = await _productService.GetAllCategoriesAsync()
+                Name = product.Name,
+                Description = product.Description,
+                Price = product.Price,
+                ImageUrl = product.ImageUrl,
+                CategoryId = product.CategoryId,
+                CategoryName = product.Category?.Name,
+                Categories = (await _productService.GetAllCategoriesAsync())
+                    .Select(c => new CategoryVM
+                    {
+                        Id = c.Id,
+                        Name = c.Name
+                    })
+                    .ToList()
             };
 
-            return View(pvm);
+            return View(productVm);
         }
 
-        // POST: Product/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, ProductVM pvm)
+        public async Task<IActionResult> Edit(Guid id, ProductVM productVm)
         {
-            if (id != pvm.Product.Id)
+            if (id != productVm.Id)
             {
                 return NotFound();
             }
 
             if (ModelState.IsValid)
             {
-                await _productService.UpdateProductAsync(pvm.Product);
+                await _productService.UpdateProductAsync(
+                    id,
+                    productVm.Name,
+                    productVm.Description,
+                    productVm.Price,
+                    productVm.ImageUrl,
+                    productVm.CategoryId,
+                    productVm.CategoryName
+                    );
                 return RedirectToAction(nameof(Index));
             }
 
-            _logger.LogInformation("Model is not valid. Errors : \n {errors}", 
-               string.Join(Environment.NewLine, 
-                   ModelState.Values
-                       .Where(v=>v.Errors.Any())
-                       .Select(v=> 
-                           $"{v.AttemptedValue} - {v.Errors.Select(e=> e.ErrorMessage).FirstOrDefault()?.ToString()}" 
-                       ).ToList()
-                   ));
+            productVm.Categories = (await _productService.GetAllCategoriesAsync())
+                .Select(c => new CategoryVM
+                {
+                    Id = c.Id,
+                    Name = c.Name
+                })
+                .ToList();
 
-            pvm.Categories = await _productService.GetAllCategoriesAsync();
-            return View(pvm);
+            return View(productVm);
         }
 
-        // GET: Product/Delete/5
         public async Task<IActionResult> Delete(Guid? id)
         {
             if (id == null)
@@ -149,13 +195,26 @@ namespace EcomPulse.Web.Controllers
 
             var productVm = new ProductVM
             {
-                Product = product
+                Name = product.Name,
+                Description = product.Description,
+                Price = product.Price,
+                ImageUrl = product.ImageUrl,
+                CategoryId = product.CategoryId,
+                CategoryName = product.Category?.Name,
+
+                Categories = (await _productService.GetAllCategoriesAsync())
+                    .Select(c => new CategoryVM
+                    {
+                        Id = c.Id,
+                        Name = c.Name
+                    })
+                    .ToList()
+                
             };
-            
+
             return View(productVm);
         }
 
-        // POST: Product/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
