@@ -7,6 +7,8 @@ namespace EcomPulse.Web.ViewModel.Product
             Name = string.Empty;
             Description = string.Empty;
             Price = 0;
+            CategoryName = string.Empty;
+
             Categories = new List<CategoryVM>();
         }
         public Guid Id { get; set; } 
