@@ -91,7 +91,7 @@ namespace EcomPulse.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(Guid id, CartVM cartVM)
         {
-            if (id != cartVM.CartId)
+            if (id != cartVM.Id)
             {
                 return NotFound();
             }

@@ -18,8 +18,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddScoped<ApplicationDbContext>();
 
 builder.Services.AddScoped<ProductService>();
-//builder.Services.AddScoped<OrderService>();
-//builder.Services.AddScoped<CartService>();
+builder.Services.AddScoped<OrderService>();
+builder.Services.AddScoped<CartService>();
 
 var app = builder.Build();
 

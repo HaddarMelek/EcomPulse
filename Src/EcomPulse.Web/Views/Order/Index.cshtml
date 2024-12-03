@@ -1,61 +1,71 @@
 @using Microsoft.AspNetCore.Mvc.TagHelpers
-@model EcomPulse.Web.ViewModel.OrderVM
-
+@model List<EcomPulse.Web.ViewModel.OrderVM>
 
 @{
-    ViewData["Title"] = "Edit Order";
+    ViewData["Title"] = "Edit Orders";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<h1>Edit Order</h1>
+<h1>Edit Orders</h1>
 <hr />
 <div class="row">
-    <div class="col-md-6">
-        <form asp-action="Edit">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <input type="hidden" asp-for="Id" />
-            ,
-            
-            <!-- User Dropdown -->
-            <div class="form-group">
-                <label asp-for="UserId" class="control-label"></label>
-                <select asp-for="UserId" class="form-control" asp-items="ViewBag.Users"></select>
-                <span asp-validation-for="UserId" class="text-danger"></span>
-            </div>
+    <div class="col-md-12">
+        @foreach (var order in Model)
+        {
+            <div class="card mb-3">
+                <div class="card-body">
+                    <form asp-action="Edit">
+                        <input type="hidden" asp-for="@order.Id" />
+                        <h5 class="card-title">Order ID: @order.Id</h5>
 
-            <!-- Total -->
-            <div class="form-group">
-                <label asp-for="Total" class="control-label"></label>
-                <input asp-for="Total" class="form-control" />
-                <span asp-validation-for="Total" class="text-danger"></span>
-            </div>
+                        <!-- User Dropdown -->
+                        <div class="form-group">
+                            <label asp-for="@order.UserId" class="control-label">User</label>
+                            <select asp-for="@order.UserId" class="form-control" asp-items="ViewBag.Users"></select>
+                            <span asp-validation-for="@order.UserId" class="text-danger"></span>
+                        </div>
 
-            <!-- Order Date -->
-            <div class="form-group">
-                <label asp-for="OrderDate" class="control-label"></label>
-                <input asp-for="OrderDate" class="form-control" type="datetime-local" />
-                <span asp-validation-for="OrderDate" class="text-danger"></span>
-            </div>
+                        <!-- Total -->
+                        <div class="form-group">
+                            <label asp-for="@order.Total" class="control-label">Total</label>
+                            <input asp-for="@order.Total" class="form-control" />
+                            <span asp-validation-for="@order.Total" class="text-danger"></span>
+                        </div>
 
-            <!-- Shipping Address -->
-            <div class="form-group">
-                <label asp-for="ShippingAddress" class="control-label"></label>
-                <input asp-for="ShippingAddress" class="form-control" />
-                <span asp-validation-for="ShippingAddress" class="text-danger"></span>
-            </div>
+                        <!-- Order Date -->
+                        <div class="form-group">
+                            <label asp-for="@order.OrderDate" class="control-label">Order Date</label>
+                            <input asp-for="@order.OrderDate" class="form-control" type="datetime-local" />
+                            <span asp-validation-for="@order.OrderDate" class="text-danger"></span>
+                        </div>
 
-            <!-- Status -->
-            <div class="form-group">
-                <label asp-for="Status" class="control-label"></label>
-                <input asp-for="Status" class="form-control" />
-                <span asp-validation-for="Status" class="text-danger"></span>
-            </div>
+                        <!-- Shipping Address -->
+                        <div class="form-group">
+                            <label asp-for="@order.ShippingAddress" class="control-label">Shipping Address</label>
+                            <input asp-for="@order.ShippingAddress" class="form-control" />
+                            <span asp-validation-for="@order.ShippingAddress" class="text-danger"></span>
+                        </div>
 
-            <div class="form-group">
-                <input type="submit" value="Save" class="btn btn-primary" />
-                <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+                        <!-- Status -->
+                        <div class="form-group">
+                            <label asp-for="@order.Status" class="control-label">Status</label>
+                            <select asp-for="@order.Status" class="form-control">
+                                <option value="Pending" @(order.Status == "Pending" ? "selected" : "")>Pending</option>
+                                <option value="Processing" @(order.Status == "Processing" ? "selected" : "")>Processing</option>
+                                <option value="Completed" @(order.Status == "Completed" ? "selected" : "")>Completed</option>
+                                <option value="Cancelled" @(order.Status == "Cancelled" ? "selected" : "")>Cancelled</option>
+                            </select>
+                            <span asp-validation-for="@order.Status" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <input type="submit" value="Save Changes" class="btn btn-primary" />
+                            <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+                        </div>
+                    </form>
+                </div>
             </div>
-        </form>
+        }
     </div>
 </div>
 
