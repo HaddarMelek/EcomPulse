@@ -1,6 +1,10 @@
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 using EcomPulse.Web.Services;
 using EcomPulse.Web.ViewModel.Product;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace EcomPulse.Web.Controllers
 {

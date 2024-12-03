@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace EcomPulse.Web.ViewModel
 {
     public class OrderVM

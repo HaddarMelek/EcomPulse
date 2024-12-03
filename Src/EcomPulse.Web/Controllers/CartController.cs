@@ -1,32 +1,38 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using EcomPulse.Web.Data;
-using EcomPulse.Web.Models;
+using Microsoft.Extensions.Logging;
+using EcomPulse.Web.Services;
+using EcomPulse.Web.ViewModel;
+using System;
+using System.Threading.Tasks;
 
 namespace EcomPulse.Web.Controllers
 {
     public class CartController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly CartService _cartService;
+        private readonly ILogger<CartController> _logger;
 
-        public CartController(ApplicationDbContext context)
+        public CartController(CartService cartService, ILogger<CartController> logger)
         {
-            _context = context;
+            _cartService = cartService;
+            _logger = logger;
         }
 
-        // GET: Cart
         public async Task<IActionResult> Index()
         {
-            var applicationDbContext = _context.Carts.Include(c => c.User);
-            return View(await applicationDbContext.ToListAsync());
+            try
+            {
+                var carts = await _cartService.GetAllCartsAsync();
+                _logger.LogInformation("Successfully retrieved all carts.");
+                return View(carts);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error retrieving carts: {ex.Message}");
+                return View("Error");
+            }
         }
 
-        // GET: Cart/Details/5
         public async Task<IActionResult> Details(Guid? id)
         {
             if (id == null)
@@ -34,67 +40,58 @@ namespace EcomPulse.Web.Controllers
                 return NotFound();
             }
 
-            var cart = await _context.Carts
-                .Include(c => c.User)
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (cart == null)
+            try
             {
-                return NotFound();
+                var cart = await _cartService.GetCartByIdAsync(id.Value);
+                if (cart == null)
+                {
+                    return NotFound();
+                }
+
+                _logger.LogInformation($"Successfully retrieved cart details for CartId: {id}");
+                return View(cart);
             }
-
-            return View(cart);
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error retrieving cart details: {ex.Message}");
+                return View("Error");
+            }
         }
 
-        // GET: Cart/Create
-        public IActionResult Create()
-        {
-            ViewData["UserId"] = new SelectList(_context.Set<User>(), "Id", "Id");
-            return View();
-        }
-
-        // POST: Cart/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,UserId")] Cart cart)
+        public async Task<IActionResult> Create(CartVM cartVM)
         {
             if (ModelState.IsValid)
             {
-                cart.Id = Guid.NewGuid();
-                _context.Add(cart);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                try
+                {
+                    var success = await _cartService.CreateCartAsync(cartVM);
+                    if (success)
+                    {
+                        _logger.LogInformation("Cart created successfully.");
+                        return RedirectToAction(nameof(Index));
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Failed to create cart.");
+                        return View("Error");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"Error creating cart: {ex.Message}");
+                    return View("Error");
+                }
             }
-            ViewData["UserId"] = new SelectList(_context.Set<User>(), "Id", "Id", cart.UserId);
-            return View(cart);
+            return View(cartVM);
         }
 
-        // GET: Cart/Edit/5
-        public async Task<IActionResult> Edit(Guid? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var cart = await _context.Carts.FindAsync(id);
-            if (cart == null)
-            {
-                return NotFound();
-            }
-            ViewData["UserId"] = new SelectList(_context.Set<User>(), "Id", "Id", cart.UserId);
-            return View(cart);
-        }
-
-        // POST: Cart/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("Id,UserId")] Cart cart)
+        public async Task<IActionResult> Edit(Guid id, CartVM cartVM)
         {
-            if (id != cart.Id)
+            if (id != cartVM.CartId)
             {
                 return NotFound();
             }
@@ -103,63 +100,50 @@ namespace EcomPulse.Web.Controllers
             {
                 try
                 {
-                    _context.Update(cart);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!CartExists(cart.Id))
+                    var success = await _cartService.UpdateCartAsync(cartVM);
+                    if (success)
                     {
-                        return NotFound();
+                        _logger.LogInformation("Cart updated successfully.");
+                        return RedirectToAction(nameof(Index));
                     }
                     else
                     {
-                        throw;
+                        _logger.LogWarning("Failed to update cart.");
+                        return View("Error");
                     }
                 }
-                return RedirectToAction(nameof(Index));
+                catch (Exception ex)
+                {
+                    _logger.LogError($"Error updating cart: {ex.Message}");
+                    return View("Error");
+                }
             }
-            ViewData["UserId"] = new SelectList(_context.Set<User>(), "Id", "Id", cart.UserId);
-            return View(cart);
+            return View(cartVM);
         }
 
-        // GET: Cart/Delete/5
-        public async Task<IActionResult> Delete(Guid? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var cart = await _context.Carts
-                .Include(c => c.User)
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (cart == null)
-            {
-                return NotFound();
-            }
-
-            return View(cart);
-        }
-
-        // POST: Cart/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var cart = await _context.Carts.FindAsync(id);
-            if (cart != null)
+            try
             {
-                _context.Carts.Remove(cart);
+                var success = await _cartService.DeleteCartAsync(id);
+                if (success)
+                {
+                    _logger.LogInformation($"Cart {id} deleted successfully.");
+                    return RedirectToAction(nameof(Index));
+                }
+                else
+                {
+                    _logger.LogWarning($"Failed to delete cart {id}.");
+                    return View("Error");
+                }
             }
-
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
-        }
-
-        private bool CartExists(Guid id)
-        {
-            return _context.Carts.Any(e => e.Id == id);
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error deleting cart: {ex.Message}");
+                return View("Error");
+            }
         }
     }
 }

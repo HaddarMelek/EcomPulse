@@ -2,6 +2,10 @@ using Microsoft.EntityFrameworkCore;
 using EcomPulse.Web.Data;
 using EcomPulse.Web.Models;
 using EcomPulse.Web.Services;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 

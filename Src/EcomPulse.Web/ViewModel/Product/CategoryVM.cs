@@ -1,3 +1,5 @@
+using System;
+
 namespace EcomPulse.Web.ViewModel.Product
 {
     public  class CategoryVM
