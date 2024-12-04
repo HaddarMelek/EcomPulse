@@ -46,6 +46,7 @@ namespace EcomPulse.Web.Controllers
                 if (cart == null)
                 {
                     return NotFound();
+                    
                 }
 
                 _logger.LogInformation($"Successfully retrieved cart details for CartId: {id}");
@@ -60,13 +61,13 @@ namespace EcomPulse.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(CartVM cartVM)
+        public async Task<IActionResult> Create(CartVM cartVm)
         {
             if (ModelState.IsValid)
             {
                 try
                 {
-                    var success = await _cartService.CreateCartAsync(cartVM);
+                    var success = await _cartService.CreateCartAsync(cartVm);
                     if (success)
                     {
                         _logger.LogInformation("Cart created successfully.");
@@ -84,14 +85,14 @@ namespace EcomPulse.Web.Controllers
                     return View("Error");
                 }
             }
-            return View(cartVM);
+            return View(cartVm);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, CartVM cartVM)
+        public async Task<IActionResult> Edit(Guid id, CartVM cartVm)
         {
-            if (id != cartVM.Id)
+            if (id != cartVm.Id)
             {
                 return NotFound();
             }
@@ -100,7 +101,7 @@ namespace EcomPulse.Web.Controllers
             {
                 try
                 {
-                    var success = await _cartService.UpdateCartAsync(cartVM);
+                    var success = await _cartService.UpdateCartAsync(cartVm);
                     if (success)
                     {
                         _logger.LogInformation("Cart updated successfully.");
@@ -118,7 +119,7 @@ namespace EcomPulse.Web.Controllers
                     return View("Error");
                 }
             }
-            return View(cartVM);
+            return View(cartVm);
         }
 
         [HttpPost, ActionName("Delete")]

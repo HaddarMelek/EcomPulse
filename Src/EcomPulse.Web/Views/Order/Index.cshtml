@@ -6,7 +6,7 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<h1>Edit Orders</h1>
+<h1>Orders</h1>
 <hr />
 <div class="row">
     <div class="col-md-12">
@@ -46,17 +46,8 @@
                             <span asp-validation-for="@order.ShippingAddress" class="text-danger"></span>
                         </div>
 
-                        <!-- Status -->
-                        <div class="form-group">
-                            <label asp-for="@order.Status" class="control-label">Status</label>
-                            <select asp-for="@order.Status" class="form-control">
-                                <option value="Pending" @(order.Status == "Pending" ? "selected" : "")>Pending</option>
-                                <option value="Processing" @(order.Status == "Processing" ? "selected" : "")>Processing</option>
-                                <option value="Completed" @(order.Status == "Completed" ? "selected" : "")>Completed</option>
-                                <option value="Cancelled" @(order.Status == "Cancelled" ? "selected" : "")>Cancelled</option>
-                            </select>
-                            <span asp-validation-for="@order.Status" class="text-danger"></span>
-                        </div>
+                        <!-- Status should be implemented here -->
+                        
 
                         <div class="form-group">
                             <input type="submit" value="Save Changes" class="btn btn-primary" />

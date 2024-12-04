@@ -35,7 +35,7 @@ namespace EcomPulse.Web.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Carts", (string)null);
+                    b.ToTable("Carts");
                 });
 
             modelBuilder.Entity("EcomPulse.Web.Models.CartItem", b =>
@@ -59,7 +59,7 @@ namespace EcomPulse.Web.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("CartItems", (string)null);
+                    b.ToTable("CartItems");
                 });
 
             modelBuilder.Entity("EcomPulse.Web.Models.Category", b =>
@@ -74,7 +74,7 @@ namespace EcomPulse.Web.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Categories", (string)null);
+                    b.ToTable("Categories");
                 });
 
             modelBuilder.Entity("EcomPulse.Web.Models.Order", b =>
@@ -105,7 +105,7 @@ namespace EcomPulse.Web.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Orders", (string)null);
+                    b.ToTable("Orders");
                 });
 
             modelBuilder.Entity("EcomPulse.Web.Models.OrderItem", b =>
@@ -132,7 +132,7 @@ namespace EcomPulse.Web.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("OrderItems", (string)null);
+                    b.ToTable("OrderItems");
                 });
 
             modelBuilder.Entity("EcomPulse.Web.Models.Product", b =>
@@ -164,7 +164,7 @@ namespace EcomPulse.Web.Migrations
 
                     b.HasIndex("CategoryId");
 
-                    b.ToTable("Products", (string)null);
+                    b.ToTable("Products");
                 });
 
             modelBuilder.Entity("EcomPulse.Web.Models.User", b =>
@@ -189,7 +189,7 @@ namespace EcomPulse.Web.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("EcomPulse.Web.Models.Cart", b =>
