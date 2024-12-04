@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using EcomPulse.Web.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace EcomPulse.Web.Controllers;
 

@@ -1,3 +1,4 @@
+@using Microsoft.AspNetCore.Mvc.TagHelpers
 @model EcomPulse.Web.ViewModel.Product.ProductVM
 
 @{
@@ -9,7 +10,7 @@
 
 <div>
     <h4>Product</h4>
-    <hr />
+    <hr/>
     <dl class="row">
         <dt class="col-sm-2">
             @Html.DisplayNameFor(model => model.Name)
@@ -36,11 +37,11 @@
             @Html.DisplayFor(model => model.ImageUrl)
         </dd>
         <dt class="col-sm-2">
-Category        </dt>
+            Category
+        </dt>
         <dd class="col-sm-10">
             @Html.DisplayFor(model => model.CategoryName)
         </dd>
-
 
 
     </dl>

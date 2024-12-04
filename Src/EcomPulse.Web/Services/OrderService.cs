@@ -1,134 +1,163 @@
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using EcomPulse.Web.Data;
-using EcomPulse.Web.ViewModel;
+using EcomPulse.Web.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using NuGet.Packaging;
 
-namespace EcomPulse.Web.Services
+namespace EcomPulse.Web.Services;
+
+public class OrderService
 {
-    public class OrderService
+    private readonly ApplicationDbContext _context;
+    private readonly ILogger<OrderService> _logger;
+
+    public OrderService(ILogger<OrderService> logger, ApplicationDbContext context)
     {
-        private readonly ApplicationDbContext _context;
-        private readonly ILogger<OrderService> _logger;
+        _context = context;
+        _logger = logger;
+    }
 
-        public OrderService(ILogger<OrderService> logger, ApplicationDbContext context)
+    public async Task<List<Order>> GetAllOrdersAsync()
+    {
+        try
         {
-            _context = context;
-            _logger = logger;
-        }
-
-        public async Task<List<OrderVM>> GetAllOrdersAsync()
-        {
-            return await _context.Orders
+            var orders = await _context.Orders
                 .Include(order => order.User)
-                .Select(order => new OrderVM
-                {
-                    Id = order.Id,
-                    UserId = order.UserId,
-                    Total = order.Total,
-                    OrderDate = order.OrderDate,
-                    ShippingAddress = order.ShippingAddress,
-                    Status = order.Status,
-                    OrderItems = order.OrderItems.Select(oi => new OrderItemVM
-                    {
-                        Id = oi.Id,
-                        ProductId = oi.ProductId,
-                        Quantity = oi.Quantity,
-                        Price = oi.Price
-                    }).ToList()
-                })
+                .Include(order => order.OrderItems)
                 .ToListAsync();
-        }
 
-        public async Task<OrderVM?> GetOrderByIdAsync(Guid id)
+            _logger.LogInformation("Successfully fetched all orders.");
+            return orders;
+        }
+        catch (Exception ex)
         {
-            return await _context.Orders
+            _logger.LogError(ex, "Error fetching orders.");
+            throw;
+        }
+    }
+
+    public async Task<Order?> GetOrderByIdAsync(Guid id)
+    {
+        try
+        {
+            var order = await _context.Orders
                 .Include(o => o.User)
-                .Where(o => o.Id == id)
-                .Select(o => new OrderVM
-                {
-                    Id = o.Id,
-                    UserId = o.UserId,
-                    Total = o.Total,
-                    OrderDate = o.OrderDate,
-                    ShippingAddress = o.ShippingAddress,
-                    Status = o.Status,
-                    OrderItems = o.OrderItems.Select(oi => new OrderItemVM
-                    {
-                        Id = oi.Id,
-                        ProductId = oi.ProductId,
-                        Quantity = oi.Quantity,
-                        Price = oi.Price
-                    }).ToList()
-                })
-                .FirstOrDefaultAsync();
+                .Include(o => o.OrderItems)
+                .FirstOrDefaultAsync(o => o.Id == id);
+
+            if (order == null)
+                _logger.LogWarning("Order with Id {Id} not found.", id);
+            else
+                _logger.LogInformation("Successfully fetched order with Id {Id}.", id);
+
+            return order;
         }
-
-        public async Task AddOrderAsync(OrderVM orderVm)
+        catch (Exception ex)
         {
-            var orderId = Guid.NewGuid();
+            _logger.LogError(ex, "Error fetching order.");
+            throw;
+        }
+    }
 
-            await _context.Database.ExecuteSqlRawAsync(
-                "INSERT INTO Orders (Id, UserId, Total, OrderDate, ShippingAddress, Status) VALUES ({0}, {1}, {2}, {3}, {4}, {5})",
-                orderId, 
-                orderVm.UserId, 
-                orderVm.Total, 
-                DateTime.UtcNow, 
-                orderVm.ShippingAddress, 
-                orderVm.Status
-            );
+    public async Task AddOrderAsync(Order order)
+    {
+        try
+        {
+            order.Id = Guid.NewGuid();
+            order.OrderDate = DateTime.UtcNow;
 
-            foreach (var orderItemVm in orderVm.OrderItems)
+            await _context.Orders.AddAsync(order);
+            await _context.SaveChangesAsync();
+
+            foreach (var orderItem in order.OrderItems)
             {
-                await _context.Database.ExecuteSqlRawAsync(
-                    "INSERT INTO OrderItems (Id, OrderId, ProductId, Quantity, Price) VALUES ({0}, {1}, {2}, {3}, {4})",
-                    Guid.NewGuid(), 
-                    orderId, 
-                    orderItemVm.ProductId, 
-                    orderItemVm.Quantity, 
-                    orderItemVm.Price
-                );
+                orderItem.Id = Guid.NewGuid();
+                orderItem.OrderId = order.Id;
+
+                await _context.OrderItems.AddAsync(orderItem);
             }
+
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Order added successfully.");
         }
-
-        public async Task UpdateOrderAsync(OrderVM orderVm)
+        catch (Exception ex)
         {
-            await _context.Database.ExecuteSqlRawAsync(
-                "UPDATE Orders SET UserId = {0}, Total = {1}, OrderDate = {2}, ShippingAddress = {3}, Status = {4} WHERE Id = {5}",
-                orderVm.UserId,
-                orderVm.Total,
-                orderVm.OrderDate,
-                orderVm.ShippingAddress,
-                orderVm.Status,
-                orderVm.Id
-            );
+            _logger.LogError(ex, "Error adding order.");
+            throw;
+        }
+    }
 
-            await _context.Database.ExecuteSqlRawAsync(
-                "DELETE FROM OrderItems WHERE OrderId = {0}",
-                orderVm.Id
-            );
+    public async Task UpdateOrderAsync(Guid id, Order updatedOrder)
+    {
+        try
+        {
+            var existingOrder = await _context.Orders
+                .Include(o => o.OrderItems)
+                .FirstOrDefaultAsync(o => o.Id == id);
 
-            foreach (var orderItemVm in orderVm.OrderItems)
+            if (existingOrder == null)
             {
-                await _context.Database.ExecuteSqlRawAsync(
-                    "INSERT INTO OrderItems (Id, OrderId, ProductId, Quantity, Price) VALUES ({0}, {1}, {2}, {3}, {4})",
-                    Guid.NewGuid(),
-                    orderVm.Id,
-                    orderItemVm.ProductId,
-                    orderItemVm.Quantity,
-                    orderItemVm.Price
-                );
+                _logger.LogError($"Order with Id {id} not found.");
+                throw new Exception("Order not found.");
             }
-        }
 
-        public async Task DeleteOrderAsync(Guid id)
+
+            existingOrder.UserId = updatedOrder.Id;
+            existingOrder.Total = updatedOrder.Total;
+            existingOrder.OrderDate = updatedOrder.OrderDate;
+            existingOrder.ShippingAddress = updatedOrder.ShippingAddress;
+            existingOrder.Status = updatedOrder.Status;
+
+            _context.OrderItems.RemoveRange(existingOrder.OrderItems);
+            await _context.SaveChangesAsync();
+
+            foreach (var orderItem in existingOrder.OrderItems)
+            {
+                orderItem.Id = Guid.NewGuid();
+                orderItem.OrderId = existingOrder.Id;
+
+                await _context.OrderItems.AddAsync(orderItem);
+            }
+
+            _context.Orders.Update(existingOrder);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Order updated successfully.");
+        }
+        catch (Exception ex)
         {
-            var order = await _context.Orders.FindAsync(id);
+            _logger.LogError(ex, "Error updating order.");
+            throw;
+        }
+    }
+
+    public async Task DeleteOrderAsync(Guid id)
+    {
+        try
+        {
+            var order = await _context.Orders
+                .Include(o => o.OrderItems)
+                .FirstOrDefaultAsync(o => o.Id == id);
+
             if (order != null)
             {
+                _context.OrderItems.RemoveRange(order.OrderItems);
                 _context.Orders.Remove(order);
                 await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"Order with Id {id} deleted successfully.");
             }
+            else
+            {
+                _logger.LogError($"Order with Id {id} not found.");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting order.");
+            throw;
         }
     }
 }
