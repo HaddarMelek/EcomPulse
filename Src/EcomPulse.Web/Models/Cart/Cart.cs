@@ -13,8 +13,9 @@ public class Cart
 
     [Key] public Guid Id { get; set; }
 
+    /*
     public Guid UserId { get; set; }
-    public required User User { get; set; }
+    public required User User { get; set; }*/
 
     public required ICollection<CartItem> CartItems { get; set; }
 }
