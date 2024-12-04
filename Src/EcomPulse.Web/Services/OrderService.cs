@@ -1,211 +1,163 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using EcomPulse.Web.Data;
 using EcomPulse.Web.Models;
-using EcomPulse.Web.ViewModel;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-namespace EcomPulse.Web.Services
+namespace EcomPulse.Web.Services;
+
+public class OrderService
 {
-    public class OrderService
+    private readonly ApplicationDbContext _context;
+    private readonly ILogger<OrderService> _logger;
+
+    public OrderService(ILogger<OrderService> logger, ApplicationDbContext context)
     {
-        private readonly ApplicationDbContext _context;
-        private readonly ILogger<OrderService> _logger;
+        _context = context;
+        _logger = logger;
+    }
 
-        public OrderService(ILogger<OrderService> logger, ApplicationDbContext context)
+    public async Task<List<Order>> GetAllOrdersAsync()
+    {
+        try
         {
-            _context = context;
-            _logger = logger;
+            var orders = await _context.Orders
+                .Include(order => order.User)
+                .Include(order => order.OrderItems)
+                .ToListAsync();
+
+            _logger.LogInformation("Successfully fetched all orders.");
+            return orders;
         }
-
-        public async Task<List<OrderVM>> GetAllOrdersAsync()
+        catch (Exception ex)
         {
-            try
-            {
-                var orders = await _context.Orders
-                    .Include(order => order.User)
-                    .Select(order => new OrderVM
-                    {
-                        Id = order.Id,
-                        UserId = order.UserId,
-                        Total = order.Total,
-                        OrderDate = order.OrderDate,
-                        ShippingAddress = order.ShippingAddress,
-                        Status = order.Status,
-                        OrderItems = order.OrderItems.Select(oi => new OrderItemVM
-                        {
-                            Id = oi.Id,
-                            ProductId = oi.ProductId,
-                            Quantity = oi.Quantity,
-                            Price = oi.Price
-                        }).ToList()
-                    })
-                    .ToListAsync();
-                _logger.LogInformation("Successfully fetched all orders.");
-                return orders;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error fetching orders.");
-                throw;
-            }
+            _logger.LogError(ex, "Error fetching orders.");
+            throw;
         }
+    }
 
-        public async Task<OrderVM?> GetOrderByIdAsync(Guid id)
+    public async Task<Order?> GetOrderByIdAsync(Guid id)
+    {
+        try
         {
-            try
-            {
-                var order = await _context.Orders
-                    .Include(o => o.User)
-                    .Where(o => o.Id == id)
-                    .Select(o => new OrderVM
-                    {
-                        Id = o.Id,
-                        UserId = o.UserId,
-                        Total = o.Total,
-                        OrderDate = o.OrderDate,
-                        ShippingAddress = o.ShippingAddress,
-                        Status = o.Status,
-                        OrderItems = o.OrderItems.Select(oi => new OrderItemVM
-                        {
-                            Id = oi.Id,
-                            ProductId = oi.ProductId,
-                            Quantity = oi.Quantity,
-                            Price = oi.Price
-                        }).ToList()
-                    })
-                    .FirstOrDefaultAsync();
-                _logger.LogInformation($"Successfully fetched order with Id {id}.");
-                return order;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error fetching order.");
-                throw;
-            }
+            var order = await _context.Orders
+                .Include(o => o.User)
+                .Include(o => o.OrderItems)
+                .FirstOrDefaultAsync(o => o.Id == id);
+
+            if (order == null)
+                _logger.LogWarning("Order with Id {Id} not found.", id);
+            else
+                _logger.LogInformation("Successfully fetched order with Id {Id}.", id);
+
+            return order;
         }
-
-        public async Task AddOrderAsync(OrderVM orderVm)
+        catch (Exception ex)
         {
-            try
-            {
-                var order = new Order
-                {
-                    Id = Guid.NewGuid(),
-                    UserId = orderVm.UserId,
-                    Total = orderVm.Total,
-                    OrderDate = DateTime.UtcNow,
-                    ShippingAddress = orderVm.ShippingAddress,
-                    Status = orderVm.Status,
-                    User = null,
-                    OrderItems = null
-                };
+            _logger.LogError(ex, "Error fetching order.");
+            throw;
+        }
+    }
 
-                await _context.Orders.AddAsync(order);
+    public async Task AddOrderAsync(Order order)
+    {
+        try
+        {
+            order.Id = Guid.NewGuid();
+            order.OrderDate = DateTime.UtcNow;
+
+            await _context.Orders.AddAsync(order);
+            await _context.SaveChangesAsync();
+
+            foreach (var orderItem in order.OrderItems)
+            {
+                orderItem.Id = Guid.NewGuid();
+                orderItem.OrderId = order.Id;
+
+                await _context.OrderItems.AddAsync(orderItem);
+            }
+
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Order added successfully.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error adding order.");
+            throw;
+        }
+    }
+
+    public async Task UpdateOrderAsync(Guid id, Order updatedOrder)
+    {
+        try
+        {
+            var existingOrder = await _context.Orders
+                .Include(o => o.OrderItems)
+                .FirstOrDefaultAsync(o => o.Id == id);
+
+            if (existingOrder == null)
+            {
+                _logger.LogError($"Order with Id {id} not found.");
+                throw new Exception("Order not found.");
+            }
+
+
+            existingOrder.UserId = updatedOrder.Id;
+            existingOrder.Total = updatedOrder.Total;
+            existingOrder.OrderDate = updatedOrder.OrderDate;
+            existingOrder.ShippingAddress = updatedOrder.ShippingAddress;
+            existingOrder.Status = updatedOrder.Status;
+
+            _context.OrderItems.RemoveRange(existingOrder.OrderItems);
+            await _context.SaveChangesAsync();
+
+            foreach (var orderItem in existingOrder.OrderItems)
+            {
+                orderItem.Id = Guid.NewGuid();
+                orderItem.OrderId = existingOrder.Id;
+
+                await _context.OrderItems.AddAsync(orderItem);
+            }
+
+            _context.Orders.Update(existingOrder);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Order updated successfully.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating order.");
+            throw;
+        }
+    }
+
+    public async Task DeleteOrderAsync(Guid id)
+    {
+        try
+        {
+            var order = await _context.Orders
+                .Include(o => o.OrderItems)
+                .FirstOrDefaultAsync(o => o.Id == id);
+
+            if (order != null)
+            {
+                _context.OrderItems.RemoveRange(order.OrderItems);
+                _context.Orders.Remove(order);
                 await _context.SaveChangesAsync();
 
-                foreach (var orderItemVm in orderVm.OrderItems)
-                {
-                    var orderItem = new OrderItem
-                    {
-                        Id = Guid.NewGuid(),
-                        OrderId = order.Id,
-                        ProductId = orderItemVm.ProductId,
-                        Quantity = orderItemVm.Quantity,
-                        Price = orderItemVm.Price,
-                        Order = null,
-                        Product = null
-                    };
-
-                    await _context.OrderItems.AddAsync(orderItem);
-                }
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation("Order added successfully.");
+                _logger.LogInformation($"Order with Id {id} deleted successfully.");
             }
-            catch (Exception ex)
+            else
             {
-                _logger.LogError(ex, "Error adding order.");
-                throw;
+                _logger.LogError($"Order with Id {id} not found.");
             }
         }
-
-        public async Task UpdateOrderAsync(OrderVM orderVm)
+        catch (Exception ex)
         {
-            try
-            {
-                var order = await _context.Orders.FindAsync(orderVm.Id);
-                if (order == null)
-                {
-                    _logger.LogError($"Order with Id {orderVm.Id} not found.");
-                    throw new Exception("Order not found.");
-                }
-
-                order.UserId = orderVm.UserId;
-                order.Total = orderVm.Total;
-                order.OrderDate = orderVm.OrderDate;
-                order.ShippingAddress = orderVm.ShippingAddress;
-                order.Status = orderVm.Status;
-
-                _context.Orders.Update(order);
-                await _context.SaveChangesAsync();
-
-                var existingOrderItems = await _context.OrderItems
-                    .Where(oi => oi.OrderId == orderVm.Id)
-                    .ToListAsync();
-                _context.OrderItems.RemoveRange(existingOrderItems);
-                await _context.SaveChangesAsync();
-
-                foreach (var orderItemVm in orderVm.OrderItems)
-                {
-                    var orderItem = new OrderItem
-                    {
-                        Id = Guid.NewGuid(),
-                        OrderId = orderVm.Id,
-                        ProductId = orderItemVm.ProductId,
-                        Quantity = orderItemVm.Quantity,
-                        Price = orderItemVm.Price,
-                        Order = null,
-                        Product = null
-                    };
-
-                    await _context.OrderItems.AddAsync(orderItem);
-                }
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation("Order updated successfully.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error updating order.");
-                throw;
-            }
-        }
-
-        public async Task DeleteOrderAsync(Guid id)
-        {
-            try
-            {
-                var order = await _context.Orders.FindAsync(id);
-                if (order != null)
-                {
-                    _context.Orders.Remove(order);
-                    await _context.SaveChangesAsync();
-                    _logger.LogInformation($"Order with Id {id} deleted successfully.");
-                }
-                else
-                {
-                    _logger.LogError($"Order with Id {id} not found.");
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error deleting order.");
-                throw;
-            }
+            _logger.LogError(ex, "Error deleting order.");
+            throw;
         }
     }
 }

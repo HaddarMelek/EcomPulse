@@ -1,200 +1,169 @@
-using EcomPulse.Web.Data;
-using EcomPulse.Web.Models;
-using EcomPulse.Web.ViewModel;
-using Microsoft.Extensions.Logging;
-using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using EcomPulse.Web.Data;
+using EcomPulse.Web.Models;
+using EcomPulse.Web.ViewModel;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
-namespace EcomPulse.Web.Services
+namespace EcomPulse.Web.Services;
+
+public class CartService
 {
-    public class CartService
+    private readonly ApplicationDbContext _context;
+    private readonly ILogger<CartService> _logger;
+
+    public CartService(ILogger<CartService> logger, ApplicationDbContext context)
     {
-        private readonly ApplicationDbContext _context;
-        private readonly ILogger<CartService> _logger;
+        _context = context;
+        _logger = logger;
+    }
 
-        public CartService(ILogger<CartService> logger, ApplicationDbContext context)
+    public async Task<List<Cart>> GetAllCartsAsync()
+    {
+        try
         {
-            _context = context;
-            _logger = logger;
+            var carts = await _context.Carts
+                .Include(c => c.User)
+                .Include(c => c.CartItems)
+                .ThenInclude(ci => ci.Product)
+                .ToListAsync();
+
+            _logger.LogInformation("Retrieved all carts.");
+            return carts;
         }
-
-        public async Task<List<CartVM>> GetAllCartsAsync()
+        catch (Exception ex)
         {
-            try
-            {
-                var carts = await _context.Carts
-                    .Include(c => c.User)
-                    .Include(c => c.CartItems)
-                        .ThenInclude(ci => ci.Product)
-                    .Select(c => new CartVM
-                    {
-                        Id = c.Id,
-                        UserId = c.UserId,
-                        UserName = c.User.UserName,
-                        CartItems = c.CartItems.Select(ci => new CartItemVM
-                        {
-                            ProductId = ci.ProductId,
-                            ProductName = ci.Product.Name,
-                            ProductPrice = ci.Product.Price,
-                            Quantity = ci.Quantity
-                        }).ToList()
-                    })
-                    .ToListAsync();
-
-                _logger.LogInformation("Retrieved all carts.");
-                return carts;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error retrieving all carts: {ex.Message}");
-                throw;
-            }
+            _logger.LogError($"Error retrieving all carts: {ex.Message}");
+            throw;
         }
+    }
 
-        public async Task<CartVM?> GetCartByIdAsync(Guid id)
+    public async Task<Cart?> GetCartByIdAsync(Guid id)
+    {
+        try
         {
-            try
-            {
-                var cart = await _context.Carts
-                    .Include(c => c.User)
-                    .Include(c => c.CartItems)
-                        .ThenInclude(ci => ci.Product)
-                    .Where(c => c.Id == id)
-                    .Select(c => new CartVM
-                    {
-                        Id = c.Id,
-                        UserId = c.UserId,
-                        UserName = c.User.UserName,
-                        CartItems = c.CartItems.Select(ci => new CartItemVM
-                        {
-                            ProductId = ci.ProductId,
-                            ProductName = ci.Product.Name,
-                            ProductPrice = ci.Product.Price,
-                            Quantity = ci.Quantity
-                        }).ToList()
-                    })
-                    .FirstOrDefaultAsync();
+            var cart = await _context.Carts
+                .Include(c => c.User)
+                .Include(c => c.CartItems)
+                .ThenInclude(ci => ci.Product)
+                .FirstOrDefaultAsync(c => c.Id == id);
 
-                if (cart == null)
-                {
-                    _logger.LogWarning($"Cart with ID {id} not found.");
-                }
+            if (cart == null) _logger.LogWarning($"Cart with ID {id} not found.");
 
-                return cart;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error retrieving cart with ID {id}: {ex.Message}");
-                throw;
-            }
+            return cart;
         }
-
-        public async Task<bool> CreateCartAsync(CartVM cartVM)
+        catch (Exception ex)
         {
-            try
+            _logger.LogError($"Error retrieving cart with ID {id}: {ex.Message}");
+            throw;
+        }
+    }
+
+    public async Task<bool> CreateCartAsync(CartVM cartVm)
+    {
+        try
+        {
+            var cart = new Cart
             {
-                var cart = new Cart
+                Id = Guid.NewGuid(),
+                UserId = cartVm.UserId,
+                User = null,
+                CartItems = null
+            };
+            _context.Carts.Add(cart);
+            await _context.SaveChangesAsync();
+
+            foreach (var item in cartVm.CartItems)
+            {
+                var cartItem = new CartItem
                 {
                     Id = Guid.NewGuid(),
-                    UserId = cartVM.UserId,
-                    User = null,
-                    CartItems = null
+                    CartId = cart.Id,
+                    ProductId = item.ProductId,
+                    Quantity = item.Quantity,
+                    Cart = null,
+                    Product = null
                 };
-                _context.Carts.Add(cart);
-                await _context.SaveChangesAsync();
-
-                foreach (var item in cartVM.CartItems)
-                {
-                    var cartItem = new CartItem
-                    {
-                        Id = Guid.NewGuid(),
-                        CartId = cart.Id,
-                        ProductId = item.ProductId,
-                        Quantity = item.Quantity,
-                        Cart = null,
-                        Product = null
-                    };
-                    _context.CartItems.Add(cartItem);
-                }
-
-                await _context.SaveChangesAsync();
-                _logger.LogInformation("Cart created successfully.");
-                return true;
+                _context.CartItems.Add(cartItem);
             }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error creating cart: {ex.Message}");
-                throw;
-            }
+
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Cart created successfully.");
+            return true;
         }
-
-        public async Task<bool> UpdateCartAsync(CartVM cartVM)
+        catch (Exception ex)
         {
-            try
-            {
-                var cart = await _context.Carts.FindAsync(cartVM.Id);
-                if (cart == null)
-                {
-                    _logger.LogWarning($"Cart with ID {cartVM.Id} not found.");
-                    return false;
-                }
-
-                cart.UserId = cartVM.UserId;
-
-                var existingItems = _context.CartItems.Where(ci => ci.CartId == cartVM.Id);
-                _context.CartItems.RemoveRange(existingItems);
-
-                foreach (var item in cartVM.CartItems)
-                {
-                    var cartItem = new CartItem
-                    {
-                        CartId = cartVM.Id,
-                        ProductId = item.ProductId,
-                        Quantity = item.Quantity,
-                        Cart = null,
-                        Product = null
-                    };
-                    _context.CartItems.Add(cartItem);
-                }
-
-                await _context.SaveChangesAsync();
-                _logger.LogInformation($"Cart {cartVM.Id} updated successfully.");
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error updating cart {cartVM.Id}: {ex.Message}");
-                throw;
-            }
+            _logger.LogError($"Error creating cart: {ex.Message}");
+            throw;
         }
+    }
 
-        public async Task<bool> DeleteCartAsync(Guid id)
+    public async Task<bool> UpdateCartAsync(CartVM cartVM)
+    {
+        try
         {
-            try
+            var cart = await _context.Carts.FindAsync(cartVM.Id);
+            if (cart == null)
             {
-                var cart = await _context.Carts.FindAsync(id);
-                if (cart == null)
+                _logger.LogWarning($"Cart with ID {cartVM.Id} not found.");
+                return false;
+            }
+
+            cart.UserId = cartVM.UserId;
+
+            var existingItems = _context.CartItems.Where(ci => ci.CartId == cartVM.Id);
+            _context.CartItems.RemoveRange(existingItems);
+
+            foreach (var item in cartVM.CartItems)
+            {
+                var cartItem = new CartItem
                 {
-                    _logger.LogWarning($"Cart with ID {id} not found.");
-                    return false;
-                }
-
-                var cartItems = _context.CartItems.Where(ci => ci.CartId == id);
-                _context.CartItems.RemoveRange(cartItems);
-
-                _context.Carts.Remove(cart);
-                await _context.SaveChangesAsync();
-                _logger.LogInformation($"Cart {id} deleted successfully.");
-                return true;
+                    CartId = cartVM.Id,
+                    ProductId = item.ProductId,
+                    Quantity = item.Quantity,
+                    Cart = null,
+                    Product = null
+                };
+                _context.CartItems.Add(cartItem);
             }
-            catch (Exception ex)
+
+            await _context.SaveChangesAsync();
+            _logger.LogInformation($"Cart {cartVM.Id} updated successfully.");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Error updating cart {cartVM.Id}: {ex.Message}");
+            throw;
+        }
+    }
+
+    public async Task<bool> DeleteCartAsync(Guid id)
+    {
+        try
+        {
+            var cart = await _context.Carts.FindAsync(id);
+            if (cart == null)
             {
-                _logger.LogError($"Error deleting cart with ID {id}: {ex.Message}");
-                throw;
+                _logger.LogWarning($"Cart with ID {id} not found.");
+                return false;
             }
+
+            var cartItems = _context.CartItems.Where(ci => ci.CartId == id);
+            _context.CartItems.RemoveRange(cartItems);
+
+            _context.Carts.Remove(cart);
+            await _context.SaveChangesAsync();
+            _logger.LogInformation($"Cart {id} deleted successfully.");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Error deleting cart with ID {id}: {ex.Message}");
+            throw;
         }
     }
 }

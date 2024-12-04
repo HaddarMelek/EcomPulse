@@ -9,7 +9,7 @@
 <h1>Create Order</h1>
 
 <h4>Order Details</h4>
-<hr />
+<hr/>
 <div class="row">
     <div class="col-md-6">
         <form asp-action="Create" method="post">
@@ -25,21 +25,21 @@
             <!-- Total -->
             <div class="form-group">
                 <label asp-for="Total" class="control-label"></label>
-                <input asp-for="Total" class="form-control" />
+                <input asp-for="Total" class="form-control"/>
                 <span asp-validation-for="Total" class="text-danger"></span>
             </div>
 
             <!-- Order Date -->
             <div class="form-group">
                 <label asp-for="OrderDate" class="control-label"></label>
-                <input asp-for="OrderDate" class="form-control" type="date" />
+                <input asp-for="OrderDate" class="form-control" type="date"/>
                 <span asp-validation-for="OrderDate" class="text-danger"></span>
             </div>
 
             <!-- Shipping Address -->
             <div class="form-group">
                 <label asp-for="ShippingAddress" class="control-label"></label>
-                <input asp-for="ShippingAddress" class="form-control" />
+                <input asp-for="ShippingAddress" class="form-control"/>
                 <span asp-validation-for="ShippingAddress" class="text-danger"></span>
             </div>
 
@@ -53,5 +53,5 @@
 </div>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
 }

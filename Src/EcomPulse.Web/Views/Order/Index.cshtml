@@ -7,7 +7,7 @@
 }
 
 <h1>Orders</h1>
-<hr />
+<hr/>
 <div class="row">
     <div class="col-md-12">
         @foreach (var order in Model)
@@ -15,7 +15,7 @@
             <div class="card mb-3">
                 <div class="card-body">
                     <form asp-action="Edit">
-                        <input type="hidden" asp-for="@order.Id" />
+                        <input type="hidden" asp-for="@order.Id"/>
                         <h5 class="card-title">Order ID: @order.Id</h5>
 
                         <!-- User Dropdown -->
@@ -28,29 +28,29 @@
                         <!-- Total -->
                         <div class="form-group">
                             <label asp-for="@order.Total" class="control-label">Total</label>
-                            <input asp-for="@order.Total" class="form-control" />
+                            <input asp-for="@order.Total" class="form-control"/>
                             <span asp-validation-for="@order.Total" class="text-danger"></span>
                         </div>
 
                         <!-- Order Date -->
                         <div class="form-group">
                             <label asp-for="@order.OrderDate" class="control-label">Order Date</label>
-                            <input asp-for="@order.OrderDate" class="form-control" type="datetime-local" />
+                            <input asp-for="@order.OrderDate" class="form-control" type="datetime-local"/>
                             <span asp-validation-for="@order.OrderDate" class="text-danger"></span>
                         </div>
 
                         <!-- Shipping Address -->
                         <div class="form-group">
                             <label asp-for="@order.ShippingAddress" class="control-label">Shipping Address</label>
-                            <input asp-for="@order.ShippingAddress" class="form-control" />
+                            <input asp-for="@order.ShippingAddress" class="form-control"/>
                             <span asp-validation-for="@order.ShippingAddress" class="text-danger"></span>
                         </div>
 
                         <!-- Status should be implemented here -->
-                        
+
 
                         <div class="form-group">
-                            <input type="submit" value="Save Changes" class="btn btn-primary" />
+                            <input type="submit" value="Save Changes" class="btn btn-primary"/>
                             <a asp-action="Index" class="btn btn-secondary">Back to List</a>
                         </div>
                     </form>
