@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Identity;
 
 namespace EcomPulse.Web.Models;
 
@@ -13,9 +14,6 @@ public class Cart
 
     [Key] public Guid Id { get; set; }
 
-    /*
-    public Guid UserId { get; set; }
-    public required User User { get; set; }*/
-
-    public required ICollection<CartItem> CartItems { get; set; }
+    public virtual IdentityUser User { get; set; }
+    public virtual ICollection<CartItem> CartItems { get; set; }
 }

@@ -18,13 +18,6 @@
                         <input type="hidden" asp-for="@order.Id"/>
                         <h5 class="card-title">Order ID: @order.Id</h5>
 
-                        <!-- User Dropdown -->
-                        <div class="form-group">
-                            <label asp-for="@order.UserId" class="control-label">User</label>
-                            <select asp-for="@order.UserId" class="form-control" asp-items="ViewBag.Users"></select>
-                            <span asp-validation-for="@order.UserId" class="text-danger"></span>
-                        </div>
-
                         <!-- Total -->
                         <div class="form-group">
                             <label asp-for="@order.Total" class="control-label">Total</label>
