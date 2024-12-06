@@ -53,7 +53,7 @@ public class CartService
         try
         {
             var cart = await _context.Carts
-                //    .Include(c => c.User)
+                .Include(c => c.User)
                 .Include(c => c.CartItems)
                 .ThenInclude(ci => ci.Product)
                 .FirstOrDefaultAsync(c => c.Id == id);
@@ -91,8 +91,6 @@ public class CartService
                     CartId = cart.Id,
                     ProductId = item.ProductId,
                     Quantity = item.Quantity,
-                    Cart = null,
-                    Product = null
                 };
                 _context.CartItems.Add(cartItem);
             }
@@ -129,8 +127,6 @@ public class CartService
                     CartId = cartVM.Id,
                     ProductId = item.ProductId,
                     Quantity = item.Quantity,
-                    Cart = null,
-                    Product = null
                 };
                 _context.CartItems.Add(cartItem);
             }
