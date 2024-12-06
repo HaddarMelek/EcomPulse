@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using EcomPulse.Web.Data;
 using EcomPulse.Web.Models;
+using EcomPulse.Web.ViewModel;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -12,11 +15,15 @@ public class OrderService
 {
     private readonly ApplicationDbContext _context;
     private readonly ILogger<OrderService> _logger;
+    private readonly UserManager<IdentityUser> _userManager;
 
-    public OrderService(ILogger<OrderService> logger, ApplicationDbContext context)
+    public OrderService(ILogger<OrderService> logger,
+        ApplicationDbContext context,
+        UserManager<IdentityUser> userManager)
     {
         _context = context;
         _logger = logger;
+        _userManager = userManager;
     }
 
     public async Task<List<Order>> GetAllOrdersAsync()
@@ -61,30 +68,42 @@ public class OrderService
         }
     }
 
-    public async Task AddOrderAsync(Order order)
+    public async Task<bool> CreateOrderAsync(OrderVM orderVm, ClaimsPrincipal currentUser)
     {
         try
         {
-            order.Id = Guid.NewGuid();
-            order.OrderDate = DateTime.UtcNow;
-
-            await _context.Orders.AddAsync(order);
+            var user = await _userManager.GetUserAsync(currentUser);
+            if (user == null) throw new Exception("User not logged in");
+            var order = new Order
+            {
+                Id = Guid.NewGuid(),
+                User = user,
+                ShippingAddress = orderVm.ShippingAddress,
+                OrderDate = orderVm.OrderDate
+            };
+            _context.Orders.Add(order);
             await _context.SaveChangesAsync();
 
-            foreach (var orderItem in order.OrderItems)
+            foreach (var item in orderVm.OrderItems)
             {
-                orderItem.Id = Guid.NewGuid();
-                orderItem.OrderId = order.Id;
-
-                await _context.OrderItems.AddAsync(orderItem);
+                var orderItem = new OrderItem
+                {
+                    Id = Guid.NewGuid(),
+                    OrderId = order.Id,
+                    ProductId = item.ProductId,
+                    Quantity = item.Quantity,
+                    Price = item.Price,
+                };
+                _context.OrderItems.Add(orderItem);
             }
 
             await _context.SaveChangesAsync();
-            _logger.LogInformation("Order added successfully.");
+            _logger.LogInformation("Order created successfully.");
+            return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error adding order.");
+            _logger.LogError($"Error creating Order: {ex.Message}");
             throw;
         }
     }
@@ -104,7 +123,6 @@ public class OrderService
             }
 
 
-            existingOrder.UserId = updatedOrder.Id;
             existingOrder.Total = updatedOrder.Total;
             existingOrder.OrderDate = updatedOrder.OrderDate;
             existingOrder.ShippingAddress = updatedOrder.ShippingAddress;

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Identity;
 
 namespace EcomPulse.Web.Models;
 
@@ -13,8 +14,7 @@ public class Order
 
     [Key] public Guid Id { get; set; }
 
-    public Guid UserId { get; set; }
-    public required User User { get; set; }
+    public virtual IdentityUser User { get; set; }
 
     [Range(0, double.MaxValue)] public decimal Total { get; set; }
 
@@ -24,5 +24,5 @@ public class Order
 
     public string Status { get; set; } = "Pending";
 
-    public required ICollection<OrderItem> OrderItems { get; set; }
+    public virtual ICollection<OrderItem> OrderItems { get; set; }
 }

@@ -2,64 +2,41 @@
 @model List<EcomPulse.Web.ViewModel.OrderVM>
 
 @{
-    ViewData["Title"] = "Edit Orders";
+    ViewData["Title"] = "Index";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
 <h1>Orders</h1>
-<hr/>
-<div class="row">
-    <div class="col-md-12">
-        @foreach (var order in Model)
-        {
-            <div class="card mb-3">
-                <div class="card-body">
-                    <form asp-action="Edit">
-                        <input type="hidden" asp-for="@order.Id"/>
-                        <h5 class="card-title">Order ID: @order.Id</h5>
 
-                        <!-- User Dropdown -->
-                        <div class="form-group">
-                            <label asp-for="@order.UserId" class="control-label">User</label>
-                            <select asp-for="@order.UserId" class="form-control" asp-items="ViewBag.Users"></select>
-                            <span asp-validation-for="@order.UserId" class="text-danger"></span>
-                        </div>
-
-                        <!-- Total -->
-                        <div class="form-group">
-                            <label asp-for="@order.Total" class="control-label">Total</label>
-                            <input asp-for="@order.Total" class="form-control"/>
-                            <span asp-validation-for="@order.Total" class="text-danger"></span>
-                        </div>
-
-                        <!-- Order Date -->
-                        <div class="form-group">
-                            <label asp-for="@order.OrderDate" class="control-label">Order Date</label>
-                            <input asp-for="@order.OrderDate" class="form-control" type="datetime-local"/>
-                            <span asp-validation-for="@order.OrderDate" class="text-danger"></span>
-                        </div>
-
-                        <!-- Shipping Address -->
-                        <div class="form-group">
-                            <label asp-for="@order.ShippingAddress" class="control-label">Shipping Address</label>
-                            <input asp-for="@order.ShippingAddress" class="form-control"/>
-                            <span asp-validation-for="@order.ShippingAddress" class="text-danger"></span>
-                        </div>
-
-                        <!-- Status should be implemented here -->
-
-
-                        <div class="form-group">
-                            <input type="submit" value="Save Changes" class="btn btn-primary"/>
-                            <a asp-action="Index" class="btn btn-secondary">Back to List</a>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        }
-    </div>
-</div>
-
-@section Scripts {
-    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
-}
+<p>
+    <a asp-action="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+    <tr>
+        <th>Order ID</th>
+        <th>Total</th>
+        <th>Order Date</th>
+        <th>Shipping Address</th>
+        <th>Status</th>
+        <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var order in Model)
+    {
+        <tr>
+            <td>@order.Id</td>
+            <td>@order.Total.ToString("C")</td>
+            <td>@order.OrderDate.ToString("yyyy-MM-dd HH:mm:ss")</td>
+            <td>@order.ShippingAddress</td>
+            <td>@order.Status</td>
+            <td>
+                <a asp-action="Edit" asp-route-id="@order.Id">Edit</a> |
+                <a asp-action="Details" asp-route-id="@order.Id">Details</a> |
+                <a asp-action="Delete" asp-route-id="@order.Id">Delete</a>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>

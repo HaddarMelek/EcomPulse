@@ -1,5 +1,5 @@
 using System;
-using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using EcomPulse.Web.Models;
 using EcomPulse.Web.Services;
@@ -23,7 +23,21 @@ public class OrderController : Controller
     public async Task<IActionResult> Index()
     {
         var orders = await _orderService.GetAllOrdersAsync();
-        var ordersVm = new List<OrderVM>();
+        var ordersVm = orders.Select(order => new OrderVM
+        {
+            Id = order.Id,
+            Total = order.Total,
+            OrderDate = order.OrderDate,
+            ShippingAddress = order.ShippingAddress,
+            Status = order.Status,
+            OrderItems = order.OrderItems.Select(item => new OrderItemVM
+            {
+                Id = item.Id,
+                ProductId = item.ProductId,
+                Quantity = item.Quantity,
+                Price = item.Price
+            }).ToList()
+        }).ToList();
         return View(ordersVm);
     }
 
@@ -38,22 +52,43 @@ public class OrderController : Controller
 
     public IActionResult Create()
     {
-        return View();
+        try
+        {
+            var orderVm = new OrderVM();
+            return View(orderVm);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest();
+        }
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(OrderVM orderVm)
     {
-        if (!ModelState.IsValid) return View(orderVm);
-        var order = new Order
-        {
-            User = null,
-            ShippingAddress = null,
-            OrderItems = null
-        };
-        await _orderService.AddOrderAsync(order);
-        return RedirectToAction(nameof(Index));
+        if (ModelState.IsValid)
+            try
+            {
+                var success = await _orderService.CreateOrderAsync(orderVm, User);
+                if (success)
+                {
+                    _logger.LogInformation("Order created successfully.");
+                    return RedirectToAction(nameof(Index));
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to create Order.");
+                    return View("Error");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error creating Order: {ex.Message}");
+                return View("Error");
+            }
+
+        return View(orderVm);
     }
 
     public async Task<IActionResult> Edit(Guid? id)

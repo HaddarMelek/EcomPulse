@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using EcomPulse.Web.Data;
 using EcomPulse.Web.Models;
 using EcomPulse.Web.ViewModel;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -14,11 +16,16 @@ public class CartService
 {
     private readonly ApplicationDbContext _context;
     private readonly ILogger<CartService> _logger;
+    private readonly UserManager<IdentityUser> _userManager;
 
-    public CartService(ILogger<CartService> logger, ApplicationDbContext context)
+
+    public CartService(ILogger<CartService> logger,
+        ApplicationDbContext context,
+        UserManager<IdentityUser> userManager)
     {
         _context = context;
         _logger = logger;
+        _userManager = userManager;
     }
 
     public async Task<List<Cart>> GetAllCartsAsync()
@@ -62,16 +69,16 @@ public class CartService
         }
     }
 
-    public async Task<bool> CreateCartAsync(CartVM cartVm)
+    public async Task<bool> CreateCartAsync(CartVM cartVm, ClaimsPrincipal currentUser)
     {
         try
         {
+            var user = await _userManager.GetUserAsync(currentUser);
+            if (user == null) throw new Exception("User not logged in");
             var cart = new Cart
             {
                 Id = Guid.NewGuid(),
-                UserId = cartVm.UserId,
-                User = null,
-                CartItems = null
+                User = user
             };
             _context.Carts.Add(cart);
             await _context.SaveChangesAsync();
@@ -84,8 +91,6 @@ public class CartService
                     CartId = cart.Id,
                     ProductId = item.ProductId,
                     Quantity = item.Quantity,
-                    Cart = null,
-                    Product = null
                 };
                 _context.CartItems.Add(cartItem);
             }
@@ -112,8 +117,6 @@ public class CartService
                 return false;
             }
 
-            cart.UserId = cartVM.UserId;
-
             var existingItems = _context.CartItems.Where(ci => ci.CartId == cartVM.Id);
             _context.CartItems.RemoveRange(existingItems);
 
@@ -124,8 +127,6 @@ public class CartService
                     CartId = cartVM.Id,
                     ProductId = item.ProductId,
                     Quantity = item.Quantity,
-                    Cart = null,
-                    Product = null
                 };
                 _context.CartItems.Add(cartItem);
             }

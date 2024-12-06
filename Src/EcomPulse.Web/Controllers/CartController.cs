@@ -52,6 +52,19 @@ public class CartController : Controller
         }
     }
 
+    public async Task<IActionResult> Create()
+    {
+        try
+        {
+            var cartVm = new CartVM();
+            return View(cartVm);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest();
+        }
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(CartVM cartVm)
@@ -59,7 +72,7 @@ public class CartController : Controller
         if (ModelState.IsValid)
             try
             {
-                var success = await _cartService.CreateCartAsync(cartVm);
+                var success = await _cartService.CreateCartAsync(cartVm, User);
                 if (success)
                 {
                     _logger.LogInformation("Cart created successfully.");
