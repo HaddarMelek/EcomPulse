@@ -32,7 +32,6 @@ public class CartController : Controller
             return View("Error");
         }
     }
-
     public async Task<IActionResult> Details(Guid? id)
     {
         if (id == null) return NotFound();
@@ -48,6 +47,56 @@ public class CartController : Controller
         catch (Exception ex)
         {
             _logger.LogError($"Error retrieving cart details: {ex.Message}");
+            return View("Error");
+        }
+    }
+    [HttpPost]
+    public async Task<IActionResult> UpdateQuantity(Guid productId, int newQuantity)
+    {
+        try
+        {
+            if (newQuantity < 1) newQuantity = 1;
+
+            var success = await _cartService.UpdateCartItemQuantityAsync(User, productId, newQuantity);
+
+            if (success)
+            {
+                _logger.LogInformation($"Updated quantity for ProductId {productId} to {newQuantity}.");
+                return RedirectToAction(nameof(Index));
+            }
+            else
+            {
+                _logger.LogWarning($"Failed to update quantity for ProductId {productId}.");
+                return View("Error");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Error updating quantity for ProductId {productId}: {ex.Message}");
+            return View("Error");
+        }
+    }
+    [HttpPost]
+    public async Task<IActionResult> RemoveItem(Guid productId)
+    {
+        try
+        {
+            var success = await _cartService.RemoveCartItemAsync(User, productId);
+
+            if (success)
+            {
+                _logger.LogInformation($"Removed ProductId {productId} from the cart.");
+                return RedirectToAction(nameof(Index));
+            }
+            else
+            {
+                _logger.LogWarning($"Failed to remove ProductId {productId}.");
+                return View("Error");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Error removing ProductId {productId} from the cart: {ex.Message}");
             return View("Error");
         }
     }
@@ -72,8 +121,8 @@ public class CartController : Controller
         if (ModelState.IsValid)
             try
             {
-                var success = await _cartService.CreateCartAsync(cartVm, User);
-                if (success)
+                var cart = await _cartService.CreateCartAsync(User);
+                if (cart != null)
                 {
                     _logger.LogInformation("Cart created successfully.");
                     return RedirectToAction(nameof(Index));
@@ -93,9 +142,10 @@ public class CartController : Controller
         return View(cartVm);
     }
 
+   
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(Guid id, CartVM cartVm)
+    /*public async Task<IActionResult> Edit(Guid id, CartVM cartVm)
     {
         if (id != cartVm.Id) return NotFound();
 
@@ -122,10 +172,9 @@ public class CartController : Controller
 
         return View(cartVm);
     }
-
+*/
     [HttpPost]
     [ActionName("Delete")]
-    [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteConfirmed(Guid id)
     {
         try

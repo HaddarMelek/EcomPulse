@@ -50,6 +50,9 @@ namespace EcomPulse.Web.Migrations
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uuid");
 
+                    b.Property<decimal>("ProductPrice")
+                        .HasColumnType("numeric");
+
                     b.Property<int>("Quantity")
                         .HasColumnType("integer");
 

@@ -1,0 +1,72 @@
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model EcomPulse.Web.ViewModel.CartVM
+
+@{
+    ViewData["Title"] = "My Cart";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h1>My Cart</h1>
+
+@if (Model == null || Model.CartItems == null || !Model.CartItems.Any())
+{
+    <p>Your cart is empty.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Product Name</th>
+            <th>Price</th>
+            <th>Quantity</th>
+            <th>Total</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var item in Model.CartItems)
+        {
+            <tr>
+                <td>@item.ProductName</td>
+                <td>@item.ProductPrice.ToString("C")</td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <button class="btn btn-sm btn-secondary"
+                                asp-action="UpdateQuantity"
+                                asp-route-productId="@item.ProductId"
+                                asp-route-newQuantity="@Math.Max(1, item.Quantity - 1)">
+                            &minus;
+                        </button>
+                        <input type="text"
+                               value="@item.Quantity"
+                               class="form-control text-center mx-2"
+                               style="width: 50px;"
+                               readonly />
+                        <button class="btn btn-sm btn-secondary"
+                                asp-action="UpdateQuantity"
+                                asp-route-productId="@item.ProductId"
+                                asp-route-newQuantity="@(item.Quantity + 1)">
+                            &plus;
+                        </button>
+                    </div>
+                </td>
+                <td>@item.TotalPrice.ToString("C")</td>
+                <td>
+                    <a class="btn btn-sm btn-info"
+                       asp-action="Details"
+                       asp-route-id="@item.ProductId">
+                        <i class="fa fa-eye"></i>
+                    </a>
+                    <button class="btn btn-sm btn-danger"
+                            asp-action="RemoveItem"
+                            asp-route-productId="@item.ProductId">
+                        <i class="fa fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    <h3>Total: @Model.TotalPrice.ToString("C")</h3>
+}

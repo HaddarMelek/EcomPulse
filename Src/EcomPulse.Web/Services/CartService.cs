@@ -69,35 +69,21 @@ public class CartService
         }
     }
 
-    public async Task<bool> CreateCartAsync(CartVM cartVm, ClaimsPrincipal currentUser)
+    public async Task<Cart?> CreateCartAsync( ClaimsPrincipal currentUser)
     {
         try
         {
             var user = await _userManager.GetUserAsync(currentUser);
-            if (user == null) throw new Exception("User not logged in");
             var cart = new Cart
             {
                 Id = Guid.NewGuid(),
                 User = user
             };
-            _context.Carts.Add(cart);
+            cart =( await _context.Carts.AddAsync(cart)).Entity;
             await _context.SaveChangesAsync();
 
-            foreach (var item in cartVm.CartItems)
-            {
-                var cartItem = new CartItem
-                {
-                    Id = Guid.NewGuid(),
-                    CartId = cart.Id,
-                    ProductId = item.ProductId,
-                    Quantity = item.Quantity,
-                };
-                _context.CartItems.Add(cartItem);
-            }
-
-            await _context.SaveChangesAsync();
             _logger.LogInformation("Cart created successfully.");
-            return true;
+            return cart;
         }
         catch (Exception ex)
         {
@@ -106,25 +92,85 @@ public class CartService
         }
     }
 
-    public async Task<bool> UpdateCartAsync(CartVM cartVM)
+    public async Task<Cart> GetCartByUserAsync(ClaimsPrincipal currentUser)
+    {
+        var user = await _userManager.GetUserAsync(currentUser);
+        var cart = await _context.Carts
+            .Include(c => c.CartItems)
+            .FirstOrDefaultAsync(c => c.User.Id == user.Id);
+        return cart;
+    }
+    
+    private async Task<Cart> GetOrCreateCartForUserAsync(ClaimsPrincipal currentUser)
     {
         try
         {
-            var cart = await _context.Carts.FindAsync(cartVM.Id);
+            var cart = await GetCartByUserAsync(currentUser);
             if (cart == null)
             {
-                _logger.LogWarning($"Cart with ID {cartVM.Id} not found.");
+                cart = await CreateCartAsync(currentUser);
+            }
+            
+            _logger.LogInformation($"Created a new cart for user {currentUser.Identity.Name}.");
+            return cart;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Error in GetOrCreateCartForUserAsync: {ex.Message}");
+            throw;
+        }
+    }
+
+    public async Task AddProductToCartAsync(
+        Guid productId, 
+        decimal productPrice, 
+        ClaimsPrincipal user)
+    {
+        var cart = await GetOrCreateCartForUserAsync(user);
+        
+        // Check if the product already exists in the cart
+        var cartItem = cart.CartItems.FirstOrDefault(item => item.ProductId == productId);
+
+        // If product exists, increase the quantity
+        if (cartItem != null)
+        {
+            cartItem.Quantity++;  // Increase quantity by 1
+            _context.CartItems.Update(cartItem);
+        }
+        else
+        {
+            // If product does not exist in the cart, add it as a new item
+             cartItem = new CartItem
+            {
+                CartId = cart.Id,
+                ProductId = productId,
+                Quantity = 1,  // Start with quantity of 1
+                ProductPrice = productPrice
+            };
+            await _context.CartItems.AddAsync(cartItem);
+        }
+         await _context.SaveChangesAsync();
+    }
+
+    public async Task<bool> UpdateCartAsync(Cart cart)
+    {
+        try
+        {
+            var existingCart = await _context.Carts.Include(c => c.CartItems)
+                .FirstOrDefaultAsync(c => c.Id == cart.Id);
+
+            if (existingCart == null)
+            {
+                _logger.LogWarning($"Cart with ID {cart.Id} not found.");
                 return false;
             }
+            _context.CartItems.RemoveRange(existingCart.CartItems);
 
-            var existingItems = _context.CartItems.Where(ci => ci.CartId == cartVM.Id);
-            _context.CartItems.RemoveRange(existingItems);
-
-            foreach (var item in cartVM.CartItems)
+            foreach (var item in cart.CartItems)
             {
                 var cartItem = new CartItem
                 {
-                    CartId = cartVM.Id,
+                    CartId = cart.Id,
                     ProductId = item.ProductId,
                     Quantity = item.Quantity,
                 };
@@ -132,12 +178,88 @@ public class CartService
             }
 
             await _context.SaveChangesAsync();
-            _logger.LogInformation($"Cart {cartVM.Id} updated successfully.");
+
+            _logger.LogInformation($"Cart {cart.Id} updated successfully.");
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error updating cart {cartVM.Id}: {ex.Message}");
+            _logger.LogError($"Error updating cart {cart.Id}: {ex.Message}");
+            throw;
+        }
+    }
+    public async Task<bool> UpdateCartItemQuantityAsync(ClaimsPrincipal currentUser, Guid productId, int quantity)
+    {
+        var user = await _userManager.GetUserAsync(currentUser);
+
+        if (user == null) return false;
+
+        var cart = await _context.Carts
+            .Include(c => c.CartItems)
+            .FirstOrDefaultAsync(c => c.User.Id == user.Id);
+
+        var item = cart?.CartItems.FirstOrDefault(i => i.ProductId == productId);
+        if (item == null) return false;
+
+        item.Quantity = quantity;
+        await _context.SaveChangesAsync();
+        return true;
+    }
+    public async Task<bool> RemoveCartItemAsync(ClaimsPrincipal currentUser, Guid productId)
+    {
+        try
+        {
+            var user = await _userManager.GetUserAsync(currentUser);
+
+            if (user == null) return false;
+
+            var cart = await _context.Carts
+                .Include(c => c.CartItems)
+                .FirstOrDefaultAsync(c => c.User.Id == user.Id);
+
+            if (cart == null) return false;
+
+            var cartItem = cart.CartItems.FirstOrDefault(item => item.ProductId == productId);
+
+            if (cartItem == null) return false;
+
+            cart.CartItems.Remove(cartItem);
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Error removing cart item: {ex.Message}");
+            return false;
+        }
+    }
+    public async Task<Cart?> GetCartForUserAsync(ClaimsPrincipal currentUser)
+    {
+        try
+        {
+            var user = await _userManager.GetUserAsync(currentUser);
+            if (user == null)
+            {
+                _logger.LogWarning("No user found for the current ClaimsPrincipal.");
+                return null;
+            }
+
+            var cart = await _context.Carts
+                .Include(c => c.CartItems)
+                .ThenInclude(ci => ci.Product) 
+                .FirstOrDefaultAsync(c => c.User.Id == user.Id);
+
+            if (cart == null)
+            {
+                _logger.LogInformation("No cart found for the user with ID {UserId}.", user.Id);
+            }
+
+            return cart;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred while retrieving the cart for the current user.");
             throw;
         }
     }
