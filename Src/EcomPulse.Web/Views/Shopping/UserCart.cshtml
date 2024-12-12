@@ -69,28 +69,43 @@ else
         </tbody>
     </table>
     <h3>Total: @Model.TotalPrice.ToString("C")</h3>
-    <input type="text" placeholder="input the shipping address here to validate your order!"/>
-    <a class="btn btn-outline-primary"
-       asp-controller="Shopping"
-       asp-action="UserOrder"
-       asp-route-cartId="@Model.Id"
-       asp-route-shippingAddress="xxxx">
-        Validate my cart
-    </a>
+    @* <input id="shippingAddress"  *@
+    @*        type="text"  *@
+    @*        placeholder="Input the shipping address here to validate your order!" /> *@
+    @* <a class="btn btn-outline-primary" *@
+    @*    data-cart-id="@Model.Id"> *@
+    @*     Validate my cart *@
+    @* </a> *@
+
+    @using (Html.BeginForm("UserOrder", "Shopping", FormMethod.Post))
+    {
+        @Html.Hidden("cartId", Model.Id)
+
+        <div class="form-group">
+            <label for="shippingAddress">Shipping Address:</label>
+            <input id="shippingAddress"
+                   type="text"
+                   name="ShippingAddress"
+                   class="form-control"
+                   placeholder="Input the shipping address here to validate your order!"/>
+        </div>
+
+        <button type="submit" class="btn btn-outline-primary">Validate my cart</button>
+    }
 }
 
 @section Scripts
 
+
+
 {
     <script>
         $(document).ready(function () {
-            // Event handler for adding a product to the cart
             $(".btn-update-quantity").click(function () {
                 var cartId = $(this).data("cart-id");
                 var productId = $(this).data("product-id");
                 var incDec = $(this).data("incDec");
 
-                // Send AJAX request
                 $.ajax({
                     url: '/Shopping/UpdateQuantity/', // Replace with your controller's URL
                     type: 'POST',
@@ -119,7 +134,6 @@ else
                 var cartId = $(this).data("cart-id");
                 var productId = $(this).data("product-id");
 
-                // Send AJAX request
                 $.ajax({
                     url: '/Shopping/RemoveProduct/', // Replace with your controller's URL
                     type: 'POST',
@@ -135,6 +149,37 @@ else
                     },
                     error: function () {
                         alert('An error occurred while processing your request.');
+                    }
+                });
+            });
+
+            $(document).on('click', '.validate-cart-btn', function () {
+                var cartId = $(this).data("cart-id");
+                var shippingAddress = $('#shippingAddress').val().trim();
+
+                if (!shippingAddress) {
+                    alert("Please provide a shipping address.");
+                    return;
+                }
+
+                $.ajax({
+                    url: '/Shopping/UserOrder',
+                    type: 'POST',
+                    data: {
+                        cartId: cartId,
+                        shippingAddress: shippingAddress
+                    },
+                    headers: {
+                        'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    success: function (response) {
+                        alert(response.message);
+                        if (response.success) {
+                            location.reload(); // Reload to show empty cart
+                        }
+                    },
+                    error: function () {
+                        alert('An error occurred while processing your order.');
                     }
                 });
             });

@@ -1,0 +1,40 @@
+@model EcomPulse.Web.ViewModel.OrderVM
+
+@{
+    ViewData["Title"] = "Payment";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h1>My Order</h1>
+
+<table class="table">
+    <thead>
+    <tr>
+        <th>Product</th>
+        <th>Quantity</th>
+        <th>Price</th>
+        <th>Subtotal</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var item in Model.OrderItems)
+    {
+        <tr>
+            <td>@item.ProductName</td>
+            <td>@item.Quantity</td>
+            <td>@item.Price.ToString("C")</td>
+            <td>@item.TotalPrice.ToString("C")</td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+<h3>Total: @Model.Total.ToString("C")</h3>
+
+
+<form asp-action="ValidatePayment" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="orderId" value="@Model.Id"/>
+    <button type="submit" class="btn btn-primary">Pay Now</button>
+</form>
+

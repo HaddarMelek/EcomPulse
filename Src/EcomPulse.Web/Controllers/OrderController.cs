@@ -22,7 +22,6 @@ public class OrderController : Controller
         var ordersVm = orders.Select(order => new OrderVM
         {
             Id = order.Id,
-            Total = order.Total,
             OrderDate = order.OrderDate,
             ShippingAddress = order.ShippingAddress,
             Status = order.Status,
@@ -30,8 +29,9 @@ public class OrderController : Controller
             {
                 Id = item.Id,
                 ProductId = item.ProductId,
+                ProductName = item.Product.Name,
                 Quantity = item.Quantity,
-                Price = item.Price
+                Price = item.Price,
             }).ToList()
         }).ToList();
         return View(ordersVm);
@@ -66,8 +66,8 @@ public class OrderController : Controller
         if (ModelState.IsValid)
             try
             {
-                var success = await _orderService.CreateOrderAsync(orderVm, User);
-                if (success)
+                var orderId = await _orderService.CreateOrderAsync(orderVm, User);
+                if (orderId != null)
                 {
                     _logger.LogInformation("Order created successfully.");
                     return RedirectToAction(nameof(Index));
@@ -107,7 +107,7 @@ public class OrderController : Controller
             return View(orderVm);
         }
 
-        await _orderService.UpdateOrderAsync(id, order);
+        await _orderService.UpdateOrderAsync(order);
         return RedirectToAction(nameof(Index));
     }
 
@@ -140,7 +140,6 @@ public class OrderController : Controller
             var ordersVm = orders.Select(order => new OrderVM
             {
                 Id = order.Id,
-                Total = order.Total,
                 OrderDate = order.OrderDate,
                 ShippingAddress = order.ShippingAddress,
                 Status = order.Status,
@@ -148,6 +147,7 @@ public class OrderController : Controller
                 {
                     Id = item.Id,
                     ProductId = item.ProductId,
+                    ProductName = item.Product.Name,
                     Quantity = item.Quantity,
                     Price = item.Price
                 }).ToList()
@@ -160,5 +160,41 @@ public class OrderController : Controller
             _logger.LogError($"Error fetching user orders: {ex.Message}");
             return View("Error");
         }
+    }
+
+    public async Task<IActionResult> Payment(Guid orderId)
+    {
+        var order = await _orderService.GetOrderByIdAsync(orderId);
+        if (order == null) return View("Error");
+        var orderVm = new OrderVM
+        {
+            Id = order.Id,
+            OrderDate = order.OrderDate,
+            ShippingAddress = order.ShippingAddress,
+            Status = order.Status,
+            OrderItems = order.OrderItems.Select(item => new OrderItemVM
+            {
+                Id = item.Id,
+                ProductId = item.ProductId,
+                ProductName = item.Product.Name,
+                Quantity = item.Quantity,
+                Price = item.Price
+            }).ToList()
+        };
+        return View(orderVm);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ValidatePayment(Guid orderId)
+    {
+        var order = await _orderService.GetOrderByIdAsync(orderId);
+
+        if (order == null) return View("Error");
+
+        order.Status = "In Progress";
+        await _orderService.UpdateOrderAsync(order);
+
+        return RedirectToAction("My");
     }
 }

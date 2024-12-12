@@ -11,11 +11,11 @@ else
     <table class="table">
         <thead>
         <tr>
-            <th>#</th>
+            <th>Shipping Address</th>
             <th>Total</th>
             <th>Date</th>
             <th>Status</th>
-            <th>Shipping Address</th>
+            <th>Reference</th>
             <th>Actions</th>
         </tr>
         </thead>
@@ -23,14 +23,26 @@ else
         @foreach (var order in Model)
         {
             <tr>
-                <td>@order.Id</td>
+                <td>@order.ShippingAddress</td>
                 <td>@order.Total</td>
                 <td>@order.OrderDate.ToString("g")</td>
                 <td>@order.Status</td>
-                <td>@order.ShippingAddress</td>
+                <td>@order.Id</td>
+
                 <td>
+                    @if (order.Status == "Pending")
+                    {
+                        <a asp-controller="Order" asp-action="Payment" asp-route-orderId="@order.Id"
+                           class="btn btn-primary">
+                            Pay Now
+                        </a>
+                    }
+
                     <a asp-controller="Order" asp-action="Details" asp-route-id="@order.Id"
-                       class="btn btn-primary">View</a>
+                       class="btn btn-outline-primary">
+                        View
+                    </a>
+
                 </td>
             </tr>
         }

@@ -168,12 +168,86 @@ public class ShoppingController : Controller
     }
 
 
+    [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> UserOrder(Guid cartId, string shippingAddress)
     {
-        return View();
+        if (string.IsNullOrWhiteSpace(shippingAddress))
+        {
+            TempData["ErrorMessage"] = "Shipping address is required.";
+            return View("UserCart"); // Returning to the cart view (change as needed)
+        }
+
+        try
+        {
+            // Retrieve the cart by ID.
+            var cart = await _cartService.GetCartByIdAsync(cartId);
+            if (cart == null || !cart.CartItems.Any())
+            {
+                TempData["ErrorMessage"] = "Cart is empty or invalid.";
+                return View("UserCart"); // Returning to the cart view (change as needed)
+            }
+
+            var orderVm = new OrderVM
+            {
+                ShippingAddress = shippingAddress,
+                OrderDate = DateTime.UtcNow,
+                OrderItems = cart.CartItems.Select(ci => new OrderItemVM
+                {
+                    ProductId = ci.ProductId,
+                    Quantity = ci.Quantity,
+                    Price = ci.ProductPrice
+                }).ToList()
+            };
+
+            var currentUser = User;
+
+            var orderId = await _orderService.CreateOrderAsync(orderVm, currentUser);
+
+            if (orderId != null)
+            {
+                await _cartService.DeleteCartAsync(cartId);
+
+                return RedirectToAction("Payment", "Order", new { orderId = orderId });
+            }
+
+            TempData["ErrorMessage"] = "Failed to place the order.";
+            return View("UserCart"); // Returning to the cart view in case of failure
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Error validating cart and creating order: {ex.Message}");
+            TempData["ErrorMessage"] = "An error occurred while processing your order.";
+            return View("UserCart"); // Returning to the cart view in case of an error
+        }
     }
 
 
-    // payement  => validate order
-    //n5dem b gpt?
+    [HttpGet]
+    public async Task<IActionResult> Payment(Guid orderId)
+    {
+        try
+        {
+            var order = await _orderService.GetOrderByIdAsync(orderId);
+            if (order == null) return NotFound("Order not found.");
+
+            var model = new OrderVM()
+            {
+                Id = order.Id,
+                OrderItems = order.OrderItems.Select(oi => new OrderItemVM()
+                {
+                    ProductId = oi.ProductId,
+                    Quantity = oi.Quantity,
+                    Price = oi.Price
+                }).ToList()
+            };
+
+            return View(model);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Error retrieving payment details: {ex.Message}");
+            return StatusCode(500, "An error occurred while processing your request.");
+        }
+    }
 }
