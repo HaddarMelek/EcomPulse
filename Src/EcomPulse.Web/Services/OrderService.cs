@@ -1,13 +1,9 @@
-using System;
-using System.Collections.Generic;
 using System.Security.Claims;
-using System.Threading.Tasks;
 using EcomPulse.Web.Data;
 using EcomPulse.Web.Models;
 using EcomPulse.Web.ViewModel;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
 namespace EcomPulse.Web.Services;
 
@@ -64,6 +60,28 @@ public class OrderService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error fetching order.");
+            throw;
+        }
+    }
+
+    public async Task<IdentityUser> GetUserAsync(ClaimsPrincipal currentUser)
+    {
+        try
+        {
+            var user = await _userManager.GetUserAsync(currentUser);
+
+            if (user == null)
+            {
+                _logger.LogWarning("No user found for the given claims.");
+                return null;
+            }
+
+            _logger.LogInformation("User {UserId} fetched successfully.", user.Id);
+            return user;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching user from claims.");
             throw;
         }
     }
@@ -147,6 +165,25 @@ public class OrderService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating order.");
+            throw;
+        }
+    }
+
+    public async Task<List<Order>> GetOrdersByUserIdAsync(string userId)
+    {
+        try
+        {
+            var orders = await _context.Orders
+                .Include(order => order.OrderItems)
+                .Where(order => order.User.Id == userId)
+                .ToListAsync();
+
+            _logger.LogInformation("Fetched orders for user {UserId}", userId);
+            return orders;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching orders for user {UserId}", userId);
             throw;
         }
     }

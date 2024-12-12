@@ -1,9 +1,6 @@
-using System;
-using System.Threading.Tasks;
 using EcomPulse.Web.Services;
 using EcomPulse.Web.ViewModel;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 
 namespace EcomPulse.Web.Controllers;
 
@@ -32,6 +29,7 @@ public class CartController : Controller
             return View("Error");
         }
     }
+
     public async Task<IActionResult> Details(Guid? id)
     {
         if (id == null) return NotFound();
@@ -50,56 +48,7 @@ public class CartController : Controller
             return View("Error");
         }
     }
-    [HttpPost]
-    public async Task<IActionResult> UpdateQuantity(Guid productId, int newQuantity)
-    {
-        try
-        {
-            if (newQuantity < 1) newQuantity = 1;
 
-            var success = await _cartService.UpdateCartItemQuantityAsync(User, productId, newQuantity);
-
-            if (success)
-            {
-                _logger.LogInformation($"Updated quantity for ProductId {productId} to {newQuantity}.");
-                return RedirectToAction(nameof(Index));
-            }
-            else
-            {
-                _logger.LogWarning($"Failed to update quantity for ProductId {productId}.");
-                return View("Error");
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Error updating quantity for ProductId {productId}: {ex.Message}");
-            return View("Error");
-        }
-    }
-    [HttpPost]
-    public async Task<IActionResult> RemoveItem(Guid productId)
-    {
-        try
-        {
-            var success = await _cartService.RemoveCartItemAsync(User, productId);
-
-            if (success)
-            {
-                _logger.LogInformation($"Removed ProductId {productId} from the cart.");
-                return RedirectToAction(nameof(Index));
-            }
-            else
-            {
-                _logger.LogWarning($"Failed to remove ProductId {productId}.");
-                return View("Error");
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Error removing ProductId {productId} from the cart: {ex.Message}");
-            return View("Error");
-        }
-    }
 
     public async Task<IActionResult> Create()
     {
@@ -142,7 +91,7 @@ public class CartController : Controller
         return View(cartVm);
     }
 
-   
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     /*public async Task<IActionResult> Edit(Guid id, CartVM cartVm)

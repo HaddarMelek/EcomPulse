@@ -1,11 +1,7 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using EcomPulse.Web.Models;
 using EcomPulse.Web.Services;
 using EcomPulse.Web.ViewModel;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 
 namespace EcomPulse.Web.Controllers;
 
@@ -130,5 +126,39 @@ public class OrderController : Controller
     {
         await _orderService.DeleteOrderAsync(id);
         return RedirectToAction(nameof(Index));
+    }
+
+
+    public async Task<IActionResult> My()
+    {
+        try
+        {
+            var user = await _orderService.GetUserAsync(User);
+            if (user == null) return RedirectToAction("Login", "Account");
+
+            var orders = await _orderService.GetOrdersByUserIdAsync(user.Id);
+            var ordersVm = orders.Select(order => new OrderVM
+            {
+                Id = order.Id,
+                Total = order.Total,
+                OrderDate = order.OrderDate,
+                ShippingAddress = order.ShippingAddress,
+                Status = order.Status,
+                OrderItems = order.OrderItems.Select(item => new OrderItemVM
+                {
+                    Id = item.Id,
+                    ProductId = item.ProductId,
+                    Quantity = item.Quantity,
+                    Price = item.Price
+                }).ToList()
+            }).ToList();
+
+            return View(ordersVm);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Error fetching user orders: {ex.Message}");
+            return View("Error");
+        }
     }
 }

@@ -7,7 +7,6 @@
 }
 
 <h1>My Cart</h1>
-
 @if (Model == null || Model.CartItems == null || !Model.CartItems.Any())
 {
     <p>Your cart is empty.</p>
@@ -32,21 +31,21 @@ else
                 <td>@item.ProductPrice.ToString("C")</td>
                 <td>
                     <div class="d-flex align-items-center">
-                        <button class="btn btn-sm btn-secondary"
-                                asp-action="UpdateQuantity"
-                                asp-route-productId="@item.ProductId"
-                                asp-route-newQuantity="@Math.Max(1, item.Quantity - 1)">
+                        <button class="btn btn-sm btn-secondary btn-update-quantity"
+                                data-cart-id="@Model.Id"
+                                data-product-id="@item.ProductId"
+                                data-inc-dec="-1">
                             &minus;
                         </button>
                         <input type="text"
                                value="@item.Quantity"
                                class="form-control text-center mx-2"
                                style="width: 50px;"
-                               readonly />
-                        <button class="btn btn-sm btn-secondary"
-                                asp-action="UpdateQuantity"
-                                asp-route-productId="@item.ProductId"
-                                asp-route-newQuantity="@(item.Quantity + 1)">
+                               readonly/>
+                        <button class="btn btn-sm btn-secondary btn-update-quantity"
+                                data-cart-id="@Model.Id"
+                                data-product-id="@item.ProductId"
+                                data-inc-dec="1">
                             &plus;
                         </button>
                     </div>
@@ -54,13 +53,14 @@ else
                 <td>@item.TotalPrice.ToString("C")</td>
                 <td>
                     <a class="btn btn-sm btn-info"
+                       asp-controller="Product"
                        asp-action="Details"
                        asp-route-id="@item.ProductId">
                         <i class="fa fa-eye"></i>
                     </a>
-                    <button class="btn btn-sm btn-danger"
-                            asp-action="RemoveItem"
-                            asp-route-productId="@item.ProductId">
+                    <button class="btn btn-sm btn-danger btn-remove-product"
+                            data-cart-id="@Model.Id"
+                            data-product-id="@item.ProductId">
                         <i class="fa fa-trash"></i>
                     </button>
                 </td>
@@ -69,4 +69,75 @@ else
         </tbody>
     </table>
     <h3>Total: @Model.TotalPrice.ToString("C")</h3>
+    <input type="text" placeholder="input the shipping address here to validate your order!"/>
+    <a class="btn btn-outline-primary"
+       asp-controller="Shopping"
+       asp-action="UserOrder"
+       asp-route-cartId="@Model.Id"
+       asp-route-shippingAddress="xxxx">
+        Validate my cart
+    </a>
+}
+
+@section Scripts
+
+{
+    <script>
+        $(document).ready(function () {
+            // Event handler for adding a product to the cart
+            $(".btn-update-quantity").click(function () {
+                var cartId = $(this).data("cart-id");
+                var productId = $(this).data("product-id");
+                var incDec = $(this).data("incDec");
+
+                // Send AJAX request
+                $.ajax({
+                    url: '/Shopping/UpdateQuantity/', // Replace with your controller's URL
+                    type: 'POST',
+                    data: {
+                        cartId: cartId,
+                        productId: productId,
+                        incDec: incDec
+                    },
+                    headers: {
+                        'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            alert(JSON.stringify(response)); // Show success message
+                        } else {
+                            alert(JSON.stringify(response)); // Show error message
+                        }
+                    },
+                    error: function () {
+                        alert('An error occurred while processing your request.');
+                    }
+                });
+            });
+
+            $(".btn-remove-product").click(function () {
+                var cartId = $(this).data("cart-id");
+                var productId = $(this).data("product-id");
+
+                // Send AJAX request
+                $.ajax({
+                    url: '/Shopping/RemoveProduct/', // Replace with your controller's URL
+                    type: 'POST',
+                    data: {
+                        cartId: cartId,
+                        productId: productId,
+                    },
+                    headers: {
+                        'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    success: function (html) {
+                        $("body").replaceWith(html);
+                    },
+                    error: function () {
+                        alert('An error occurred while processing your request.');
+                    }
+                });
+            });
+        });
+    </script>
 }

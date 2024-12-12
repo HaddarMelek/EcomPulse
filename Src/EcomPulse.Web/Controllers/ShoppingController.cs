@@ -10,14 +10,22 @@ public class ShoppingController : Controller
 {
     private readonly ProductService _productService;
     private readonly CartService _cartService;
+    private readonly OrderService _orderService;
+    private readonly ILogger<ShoppingController> _logger;
 
-    public ShoppingController(ProductService productService, CartService cartService)
+
+    public ShoppingController(ProductService productService,
+        CartService cartService,
+        OrderService orderService,
+        ILogger<ShoppingController> logger)
     {
         _productService = productService;
+        _orderService = orderService;
         _cartService = cartService;
+        _logger = logger;
     }
     // GET
-    
+
     [HttpGet]
     public async Task<IActionResult> Index(Guid? categoryId, decimal? minPrice, decimal? maxPrice)
     {
@@ -49,8 +57,6 @@ public class ShoppingController : Controller
             }).ToList(),
             MinPrice = minPrice,
             MaxPrice = maxPrice,
-            
-
         };
         return View(shoppingModel);
     }
@@ -65,7 +71,6 @@ public class ShoppingController : Controller
                 productId,
                 productPrice,
                 User);
-            // Return success response
             return Json(new { success = true, message = "Product added to cart successfully!" });
         }
         catch (Exception ex)
@@ -74,7 +79,7 @@ public class ShoppingController : Controller
             return Json(new { success = false, message = "An error occurred while adding the product to the cart." });
         }
     }
-    
+
     public async Task<IActionResult> UserCart()
     {
         try
@@ -82,8 +87,8 @@ public class ShoppingController : Controller
             var cart = await _cartService.GetCartForUserAsync(User);
             if (cart == null)
             {
-                //_logger.LogWarning("No cart found for the current user.");
-                return View(new CartVM()); 
+                _logger.LogWarning("No cart found for the current user.");
+                return View(new CartVM());
             }
 
             var cartVm = new CartVM
@@ -98,14 +103,77 @@ public class ShoppingController : Controller
                 }).ToList()
             };
 
-           // _logger.LogInformation("Successfully retrieved the cart for the current user.");
+            _logger.LogInformation("Successfully retrieved the cart for the current user.");
             return View(cartVm);
         }
         catch (Exception ex)
         {
-            //_logger.LogError($"Error retrieving the cart: {ex.Message}");
+            _logger.LogError($"Error retrieving the cart: {ex.Message}");
             return StatusCode(500, "Internal server error");
         }
     }
 
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateQuantity(Guid cartId, Guid productId, int incDec)
+    {
+        try
+        {
+            var cart = await _cartService.UpdateCartItemQuantityAsync(cartId, productId, incDec);
+            return Json(new CartVM()
+            {
+                Id = cart.Id,
+                CartItems = cart.CartItems.Select(item =>
+                    new CartItemVM()
+                    {
+                        ProductId = item.ProductId,
+                        Quantity = item.Quantity,
+                        ProductName = item.Product.Name,
+                        ProductPrice = item.ProductPrice
+                    }).ToList(),
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Error updating quantity for ProductId {productId}: {ex.Message}");
+            return Json(new { error = ex.Message });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RemoveProduct(Guid cartId, Guid productId)
+    {
+        try
+        {
+            var cart = await _cartService.RemoveProductFromCartAsync(cartId, productId);
+            return PartialView("UserCart", new CartVM()
+            {
+                Id = cart.Id,
+                CartItems = cart.CartItems.Select(item =>
+                    new CartItemVM()
+                    {
+                        ProductId = item.ProductId,
+                        Quantity = item.Quantity,
+                        ProductName = item.Product.Name,
+                        ProductPrice = item.ProductPrice
+                    }).ToList(),
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Error updating quantity for ProductId {productId}: {ex.Message}");
+            return Json(new { error = ex.Message });
+        }
+    }
+
+
+    public async Task<IActionResult> UserOrder(Guid cartId, string shippingAddress)
+    {
+        return View();
+    }
+
+
+    // payement  => validate order
+    //n5dem b gpt?
 }
