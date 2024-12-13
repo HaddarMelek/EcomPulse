@@ -4,10 +4,14 @@
     ViewData["Title"] = "Personal Data";
     ViewData["ActivePage"] = ManageNavPages.PersonalData;
 }
+<head>
 
-<h3>@ViewData["Title"]</h3>
+    <link rel="stylesheet" href="~/css/home.css">
+</head>
 
-<div class="row">
+<h3 style="text-align: center; height: 10vh;">@ViewData["Title"]</h3>
+
+<div class="row" style="display: flex; justify-content: center; align-items: center;  margin: 0;">
     <div class="col-md-6">
         <p>Your account contains personal data that you have given us. This page allows you to download or delete that
             data.</p>

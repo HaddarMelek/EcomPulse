@@ -4,7 +4,10 @@
     ViewData["Title"] = "Create Order";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
+<head>
 
+    <link rel="stylesheet" href="~/css/home.css">
+</head>
 <div class="container">
     <div class="row">
         <!-- Left Sidebar - Filters -->
@@ -37,7 +40,7 @@
                     @foreach (var category in Model.Categories)
                     {
                         <li class="list-group-item">
-                            <a href="@Url.Action("Index", "Shopping", new { categoryId = category.Id })" class="category-link">
+                            <a href="@Url.Action("Index", "Shopping", new { categoryId = category.Id })" style="color: black; text-decoration: none;" onmouseover="this.style.color='#ffcc00'" onmouseout="this.style.color='black'">
                                 @category.Name
                             </a>
 
@@ -61,7 +64,7 @@
                             <div class="card-body">
                                 <h5 class="card-title">@product.Name</h5>
                                 <p class="card-text">
-                                    <a href="@Url.Action("Details", "Product", new { id = product.Id })">
+                                    <a href="@Url.Action("Details", "Product", new { id = product.Id })" style="color: black; text-decoration: none;" onmouseover="this.style.color='#ffcc00'" onmouseout="this.style.color='black'">
                                         See Details
                                     </a>
                                 </p>

@@ -4,7 +4,13 @@
     ViewData["Title"] = "Register confirmation";
 }
 
-<h1>@ViewData["Title"]</h1>
+<head>
+
+    <link rel="stylesheet" href="~/css/home.css">
+</head>
+
+<h3 style="text-align: center; height: 10vh;">@ViewData["Title"]</h3>
+
 @{
     if (@Model.DisplayConfirmAccountLink)
     {

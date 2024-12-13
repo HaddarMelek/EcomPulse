@@ -3,9 +3,12 @@
 @{
     ViewData["Title"] = "Log out";
 }
+<head>
 
+    <link rel="stylesheet" href="~/css/home.css">
+</head>
 <header>
-    <h1>@ViewData["Title"]</h1>
+    <h1 style="text-align: center; height: 10vh;">@ViewData["Title"]</h1>
     @{
         if (User.Identity?.IsAuthenticated ?? false)
         {
