@@ -5,6 +5,9 @@
     ViewData["Title"] = "My Cart";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
+<head>
+    <link rel="stylesheet" href="~/css/home.css">
+</head>
 
 <h1>My Cart</h1>
 @if (Model == null || Model.CartItems == null || !Model.CartItems.Any())
@@ -28,7 +31,7 @@ else
         {
             <tr>
                 <td>@item.ProductName</td>
-                <td>@item.ProductPrice.ToString("C")</td>
+                <td>@item.ProductPrice DT</td>
                 <td>
                     <div class="d-flex align-items-center">
                         <button class="btn btn-sm btn-secondary btn-update-quantity"
@@ -50,32 +53,24 @@ else
                         </button>
                     </div>
                 </td>
-                <td>@item.TotalPrice.ToString("C")</td>
+                <td>@item.TotalPrice DT</td>
                 <td>
-                    <a class="btn btn-sm btn-info"
+                    <button class="btn btn-primary btn-info"
                        asp-controller="Product"
                        asp-action="Details"
-                       asp-route-id="@item.ProductId">
-                        <i class="fa fa-eye"></i>
-                    </a>
-                    <button class="btn btn-sm btn-danger btn-remove-product"
+                       asp-route-id="@item.ProductId">View
+                    </button>
+                    <button class="btn btn-primary btn-remove-product"
                             data-cart-id="@Model.Id"
-                            data-product-id="@item.ProductId">
-                        <i class="fa fa-trash"></i>
+                            data-product-id="@item.ProductId">Delete
                     </button>
                 </td>
             </tr>
         }
         </tbody>
     </table>
-    <h3>Total: @Model.TotalPrice.ToString("C")</h3>
-    @* <input id="shippingAddress"  *@
-    @*        type="text"  *@
-    @*        placeholder="Input the shipping address here to validate your order!" /> *@
-    @* <a class="btn btn-outline-primary" *@
-    @*    data-cart-id="@Model.Id"> *@
-    @*     Validate my cart *@
-    @* </a> *@
+    <h3>Total: @Model.TotalPrice DT</h3>
+   
 
     @using (Html.BeginForm("UserOrder", "Shopping", FormMethod.Post))
     {
@@ -90,7 +85,7 @@ else
                    placeholder="Input the shipping address here to validate your order!"/>
         </div>
 
-        <button type="submit" class="btn btn-outline-primary">Validate my cart</button>
+        <button type="submit" class="btn btn-primary">Validate my cart</button>
     }
 }
 
@@ -107,7 +102,7 @@ else
                 var incDec = $(this).data("incDec");
 
                 $.ajax({
-                    url: '/Shopping/UpdateQuantity/', // Replace with your controller's URL
+                    url: '/Shopping/UpdateQuantity/', 
                     type: 'POST',
                     data: {
                         cartId: cartId,
@@ -119,7 +114,8 @@ else
                     },
                     success: function (response) {
                         if (response.success) {
-                            alert(JSON.stringify(response)); // Show success message
+                            
+                            alert(JSON.stringify(response)); 
                         } else {
                             alert(JSON.stringify(response)); // Show error message
                         }

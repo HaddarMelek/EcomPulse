@@ -1,5 +1,7 @@
 @model EcomPulse.Web.ViewModel.OrderVM
-
+<head>
+    <link rel="stylesheet" href="~/css/home.css">
+</head>
 <h2>Order Details</h2>
 <p><strong>Order ID:</strong> @Model.Id</p>
 <p><strong>Order Date:</strong> @Model.OrderDate</p>
@@ -20,10 +22,10 @@
         <tr>
             <td>@item.ProductName</td>
             <td>@item.Quantity</td>
-            <td>@item.Price</td>
+            <td>@item.Price DT </td>
         </tr>
     }
     </tbody>
 </table>
 
-<a asp-controller="Order" asp-action="My" class="btn btn-secondary">Back to My Orders</a>
+<a asp-controller="Order" asp-action="My" class="btn btn-primary">Back to My Orders</a>

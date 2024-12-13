@@ -4,7 +4,9 @@
     ViewData["Title"] = "Payment";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
-
+<head>
+    <link rel="stylesheet" href="~/css/home.css">
+</head>
 <h1>My Order</h1>
 
 <table class="table">
@@ -22,14 +24,14 @@
         <tr>
             <td>@item.ProductName</td>
             <td>@item.Quantity</td>
-            <td>@item.Price.ToString("C")</td>
-            <td>@item.TotalPrice.ToString("C")</td>
+            <td>@item.Price DT</td>
+            <td>@item.TotalPrice DT</td>
         </tr>
     }
     </tbody>
 </table>
 
-<h3>Total: @Model.Total.ToString("C")</h3>
+<h3>Total: @Model.Total DT</h3>
 
 
 <form asp-action="ValidatePayment" method="post">
