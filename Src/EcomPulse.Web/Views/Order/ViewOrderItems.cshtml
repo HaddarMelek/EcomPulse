@@ -1,0 +1,29 @@
+@model EcomPulse.Web.ViewModel.OrderVM
+
+<h2>Order Details</h2>
+<p><strong>Order ID:</strong> @Model.Id</p>
+<p><strong>Order Date:</strong> @Model.OrderDate</p>
+<p><strong>Shipping Address:</strong> @Model.ShippingAddress</p>
+<p><strong>Status:</strong> @Model.Status</p>
+
+<table class="table">
+    <thead>
+    <tr>
+        <th>Product Name</th>
+        <th>Quantity</th>
+        <th>Price</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var item in Model.OrderItems)
+    {
+        <tr>
+            <td>@item.ProductName</td>
+            <td>@item.Quantity</td>
+            <td>@item.Price</td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+<a asp-controller="Order" asp-action="My" class="btn btn-secondary">Back to My Orders</a>

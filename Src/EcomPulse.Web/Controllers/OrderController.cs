@@ -197,4 +197,30 @@ public class OrderController : Controller
 
         return RedirectToAction("My");
     }
+    public async Task<IActionResult> ViewOrderItems(Guid id)
+    {
+        var order = await _orderService.GetOrderByIdAsync(id);
+        if (order == null) return View("Error");
+
+        var orderItemsVm = order.OrderItems.Select(item => new OrderItemVM
+        {
+            Id = item.Id,
+            ProductId = item.ProductId,
+            ProductName = item.Product.Name,
+            Quantity = item.Quantity,
+            Price = item.Price
+        }).ToList();
+
+        var orderVm = new OrderVM
+        {
+            Id = order.Id,
+            OrderDate = order.OrderDate,
+            ShippingAddress = order.ShippingAddress,
+            Status = order.Status,
+            OrderItems = orderItemsVm
+        };
+
+        return View(orderVm);
+    }
+
 }
