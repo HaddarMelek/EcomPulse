@@ -1,0 +1,184 @@
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model EcomPulse.Web.ViewModel.CartVM
+
+@{
+    ViewData["Title"] = "My Cart";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<head>
+    <link rel="stylesheet" href="~/css/home.css">
+</head>
+
+<h1>My Cart</h1>
+@if (Model == null || Model.CartItems == null || !Model.CartItems.Any())
+{
+    <p>Your cart is empty.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Product Name</th>
+            <th>Price</th>
+            <th>Quantity</th>
+            <th>Total</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var item in Model.CartItems)
+        {
+            <tr>
+                <td>@item.ProductName</td>
+                <td>@item.ProductPrice DT</td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <button class="btn btn-sm btn-secondary btn-update-quantity"
+                                data-cart-id="@Model.Id"
+                                data-product-id="@item.ProductId"
+                                data-inc-dec="-1">
+                            &minus;
+                        </button>
+                        <input type="text"
+                               value="@item.Quantity"
+                               class="form-control text-center mx-2"
+                               style="width: 50px;"
+                               readonly/>
+                        <button class="btn btn-sm btn-secondary btn-update-quantity"
+                                data-cart-id="@Model.Id"
+                                data-product-id="@item.ProductId"
+                                data-inc-dec="1">
+                            &plus;
+                        </button>
+                    </div>
+                </td>
+                <td>@item.TotalPrice DT</td>
+                <td>
+                    <button class="btn btn-primary btn-info"
+                       asp-controller="Product"
+                       asp-action="Details"
+                       asp-route-id="@item.ProductId">View
+                    </button>
+                    <button class="btn btn-primary btn-remove-product"
+                            data-cart-id="@Model.Id"
+                            data-product-id="@item.ProductId">Delete
+                    </button>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    <h3>Total: @Model.TotalPrice DT</h3>
+   
+
+    @using (Html.BeginForm("UserOrder", "Shopping", FormMethod.Post))
+    {
+        @Html.Hidden("cartId", Model.Id)
+
+        <div class="form-group">
+            <label for="shippingAddress">Shipping Address:</label>
+            <input id="shippingAddress"
+                   type="text"
+                   name="ShippingAddress"
+                   class="form-control"
+                   placeholder="Input the shipping address here to validate your order!"/>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Validate my cart</button>
+    }
+}
+
+@section Scripts
+
+
+
+{
+    <script>
+        $(document).ready(function () {
+            $(".btn-update-quantity").click(function () {
+                var cartId = $(this).data("cart-id");
+                var productId = $(this).data("product-id");
+                var incDec = $(this).data("incDec");
+
+                $.ajax({
+                    url: '/Shopping/UpdateQuantity/', 
+                    type: 'POST',
+                    data: {
+                        cartId: cartId,
+                        productId: productId,
+                        incDec: incDec
+                    },
+                    headers: {
+                        'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            
+                            alert(JSON.stringify(response)); 
+                        } else {
+                            alert(JSON.stringify(response)); // Show error message
+                        }
+                    },
+                    error: function () {
+                        alert('An error occurred while processing your request.');
+                    }
+                });
+            });
+
+            $(".btn-remove-product").click(function () {
+                var cartId = $(this).data("cart-id");
+                var productId = $(this).data("product-id");
+
+                $.ajax({
+                    url: '/Shopping/RemoveProduct/', // Replace with your controller's URL
+                    type: 'POST',
+                    data: {
+                        cartId: cartId,
+                        productId: productId,
+                    },
+                    headers: {
+                        'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    success: function (html) {
+                        $("body").replaceWith(html);
+                    },
+                    error: function () {
+                        alert('An error occurred while processing your request.');
+                    }
+                });
+            });
+
+            $(document).on('click', '.validate-cart-btn', function () {
+                var cartId = $(this).data("cart-id");
+                var shippingAddress = $('#shippingAddress').val().trim();
+
+                if (!shippingAddress) {
+                    alert("Please provide a shipping address.");
+                    return;
+                }
+
+                $.ajax({
+                    url: '/Shopping/UserOrder',
+                    type: 'POST',
+                    data: {
+                        cartId: cartId,
+                        shippingAddress: shippingAddress
+                    },
+                    headers: {
+                        'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    success: function (response) {
+                        alert(response.message);
+                        if (response.success) {
+                            location.reload(); // Reload to show empty cart
+                        }
+                    },
+                    error: function () {
+                        alert('An error occurred while processing your order.');
+                    }
+                });
+            });
+        });
+    </script>
+}

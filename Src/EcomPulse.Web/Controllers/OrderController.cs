@@ -1,14 +1,12 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using EcomPulse.Web.Models;
 using EcomPulse.Web.Services;
 using EcomPulse.Web.ViewModel;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 
 namespace EcomPulse.Web.Controllers;
 
+[Authorize]
 public class OrderController : Controller
 {
     private readonly OrderService _orderService;
@@ -26,7 +24,6 @@ public class OrderController : Controller
         var ordersVm = orders.Select(order => new OrderVM
         {
             Id = order.Id,
-            Total = order.Total,
             OrderDate = order.OrderDate,
             ShippingAddress = order.ShippingAddress,
             Status = order.Status,
@@ -34,8 +31,9 @@ public class OrderController : Controller
             {
                 Id = item.Id,
                 ProductId = item.ProductId,
+                ProductName = item.Product.Name,
                 Quantity = item.Quantity,
-                Price = item.Price
+                Price = item.Price,
             }).ToList()
         }).ToList();
         return View(ordersVm);
@@ -70,8 +68,8 @@ public class OrderController : Controller
         if (ModelState.IsValid)
             try
             {
-                var success = await _orderService.CreateOrderAsync(orderVm, User);
-                if (success)
+                var orderId = await _orderService.CreateOrderAsync(orderVm, User);
+                if (orderId != null)
                 {
                     _logger.LogInformation("Order created successfully.");
                     return RedirectToAction(nameof(Index));
@@ -111,7 +109,7 @@ public class OrderController : Controller
             return View(orderVm);
         }
 
-        await _orderService.UpdateOrderAsync(id, order);
+        await _orderService.UpdateOrderAsync(order);
         return RedirectToAction(nameof(Index));
     }
 
@@ -131,4 +129,100 @@ public class OrderController : Controller
         await _orderService.DeleteOrderAsync(id);
         return RedirectToAction(nameof(Index));
     }
+
+
+    public async Task<IActionResult> My()
+    {
+        try
+        {
+            var user = await _orderService.GetUserAsync(User);
+            if (user == null) return RedirectToAction("Login", "Account");
+
+            var orders = await _orderService.GetOrdersByUserIdAsync(user.Id);
+            var ordersVm = orders.Select(order => new OrderVM
+            {
+                Id = order.Id,
+                OrderDate = order.OrderDate,
+                ShippingAddress = order.ShippingAddress,
+                Status = order.Status,
+                OrderItems = order.OrderItems.Select(item => new OrderItemVM
+                {
+                    Id = item.Id,
+                    ProductId = item.ProductId,
+                    ProductName = item.Product.Name,
+                    Quantity = item.Quantity,
+                    Price = item.Price
+                }).ToList()
+            }).ToList();
+
+            return View(ordersVm);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Error fetching user orders: {ex.Message}");
+            return View("Error");
+        }
+    }
+
+    public async Task<IActionResult> Payment(Guid orderId)
+    {
+        var order = await _orderService.GetOrderByIdAsync(orderId);
+        if (order == null) return View("Error");
+        var orderVm = new OrderVM
+        {
+            Id = order.Id,
+            OrderDate = order.OrderDate,
+            ShippingAddress = order.ShippingAddress,
+            Status = order.Status,
+            OrderItems = order.OrderItems.Select(item => new OrderItemVM
+            {
+                Id = item.Id,
+                ProductId = item.ProductId,
+                ProductName = item.Product.Name,
+                Quantity = item.Quantity,
+                Price = item.Price
+            }).ToList()
+        };
+        return View(orderVm);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ValidatePayment(Guid orderId)
+    {
+        var order = await _orderService.GetOrderByIdAsync(orderId);
+
+        if (order == null) return View("Error");
+
+        order.Status = "In Progress";
+        await _orderService.UpdateOrderAsync(order);
+
+        return RedirectToAction("My");
+    }
+    public async Task<IActionResult> ViewOrderItems(Guid id)
+    {
+        var order = await _orderService.GetOrderByIdAsync(id);
+        if (order == null) return View("Error");
+
+        var orderItemsVm = order.OrderItems.Select(item => new OrderItemVM
+        {
+            Id = item.Id,
+            ProductId = item.ProductId,
+            ProductName = item.Product.Name,
+            Quantity = item.Quantity,
+            Price = item.Price
+        }).ToList();
+
+        var orderVm = new OrderVM
+        {
+            Id = order.Id,
+            OrderDate = order.OrderDate,
+            ShippingAddress = order.ShippingAddress,
+            Status = order.Status,
+            OrderItems = orderItemsVm
+        };
+
+        return View(orderVm);
+    }
+
 }

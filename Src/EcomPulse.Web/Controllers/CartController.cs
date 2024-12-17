@@ -1,9 +1,6 @@
-using System;
-using System.Threading.Tasks;
 using EcomPulse.Web.Services;
 using EcomPulse.Web.ViewModel;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 
 namespace EcomPulse.Web.Controllers;
 
@@ -52,6 +49,7 @@ public class CartController : Controller
         }
     }
 
+
     public async Task<IActionResult> Create()
     {
         try
@@ -72,8 +70,8 @@ public class CartController : Controller
         if (ModelState.IsValid)
             try
             {
-                var success = await _cartService.CreateCartAsync(cartVm, User);
-                if (success)
+                var cart = await _cartService.CreateCartAsync(User);
+                if (cart != null)
                 {
                     _logger.LogInformation("Cart created successfully.");
                     return RedirectToAction(nameof(Index));
@@ -93,9 +91,10 @@ public class CartController : Controller
         return View(cartVm);
     }
 
+
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(Guid id, CartVM cartVm)
+    /*public async Task<IActionResult> Edit(Guid id, CartVM cartVm)
     {
         if (id != cartVm.Id) return NotFound();
 
@@ -122,10 +121,9 @@ public class CartController : Controller
 
         return View(cartVm);
     }
-
+*/
     [HttpPost]
     [ActionName("Delete")]
-    [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteConfirmed(Guid id)
     {
         try

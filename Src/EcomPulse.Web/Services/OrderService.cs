@@ -1,13 +1,9 @@
-using System;
-using System.Collections.Generic;
 using System.Security.Claims;
-using System.Threading.Tasks;
 using EcomPulse.Web.Data;
 using EcomPulse.Web.Models;
 using EcomPulse.Web.ViewModel;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
 namespace EcomPulse.Web.Services;
 
@@ -33,6 +29,7 @@ public class OrderService
             var orders = await _context.Orders
                 .Include(order => order.User)
                 .Include(order => order.OrderItems)
+                .ThenInclude(item => item.Product)
                 .ToListAsync();
 
             _logger.LogInformation("Successfully fetched all orders.");
@@ -52,6 +49,7 @@ public class OrderService
             var order = await _context.Orders
                 .Include(o => o.User)
                 .Include(o => o.OrderItems)
+                .ThenInclude(item => item.Product)
                 .FirstOrDefaultAsync(o => o.Id == id);
 
             if (order == null)
@@ -68,7 +66,29 @@ public class OrderService
         }
     }
 
-    public async Task<bool> CreateOrderAsync(OrderVM orderVm, ClaimsPrincipal currentUser)
+    public async Task<IdentityUser> GetUserAsync(ClaimsPrincipal currentUser)
+    {
+        try
+        {
+            var user = await _userManager.GetUserAsync(currentUser);
+
+            if (user == null)
+            {
+                _logger.LogWarning("No user found for the given claims.");
+                return null;
+            }
+
+            _logger.LogInformation("User {UserId} fetched successfully.", user.Id);
+            return user;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching user from claims.");
+            throw;
+        }
+    }
+
+    public async Task<Guid> CreateOrderAsync(OrderVM orderVm, ClaimsPrincipal currentUser)
     {
         try
         {
@@ -79,7 +99,7 @@ public class OrderService
                 Id = Guid.NewGuid(),
                 User = user,
                 ShippingAddress = orderVm.ShippingAddress,
-                OrderDate = orderVm.OrderDate
+                OrderDate = orderVm.OrderDate,
             };
             _context.Orders.Add(order);
             await _context.SaveChangesAsync();
@@ -99,7 +119,7 @@ public class OrderService
 
             await _context.SaveChangesAsync();
             _logger.LogInformation("Order created successfully.");
-            return true;
+            return order.Id;
         }
         catch (Exception ex)
         {
@@ -108,38 +128,20 @@ public class OrderService
         }
     }
 
-    public async Task UpdateOrderAsync(Guid id, Order updatedOrder)
+    public async Task UpdateOrderAsync(Order updatedOrder)
     {
         try
         {
             var existingOrder = await _context.Orders
-                .Include(o => o.OrderItems)
-                .FirstOrDefaultAsync(o => o.Id == id);
+                .FirstOrDefaultAsync(o => o.Id == updatedOrder.Id);
 
             if (existingOrder == null)
             {
-                _logger.LogError($"Order with Id {id} not found.");
+                _logger.LogError($"Order with Id {updatedOrder.Id} not found.");
                 throw new Exception("Order not found.");
             }
 
-
-            existingOrder.Total = updatedOrder.Total;
-            existingOrder.OrderDate = updatedOrder.OrderDate;
-            existingOrder.ShippingAddress = updatedOrder.ShippingAddress;
-            existingOrder.Status = updatedOrder.Status;
-
-            _context.OrderItems.RemoveRange(existingOrder.OrderItems);
-            await _context.SaveChangesAsync();
-
-            foreach (var orderItem in existingOrder.OrderItems)
-            {
-                orderItem.Id = Guid.NewGuid();
-                orderItem.OrderId = existingOrder.Id;
-
-                await _context.OrderItems.AddAsync(orderItem);
-            }
-
-            _context.Orders.Update(existingOrder);
+            _context.Orders.Update(updatedOrder);
             await _context.SaveChangesAsync();
 
             _logger.LogInformation("Order updated successfully.");
@@ -147,6 +149,26 @@ public class OrderService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating order.");
+            throw;
+        }
+    }
+
+    public async Task<List<Order>> GetOrdersByUserIdAsync(string userId)
+    {
+        try
+        {
+            var orders = await _context.Orders
+                .Include(order => order.OrderItems)
+                .ThenInclude(item => item.Product)
+                .Where(order => order.User.Id == userId)
+                .ToListAsync();
+
+            _logger.LogInformation("Fetched orders for user {UserId}", userId);
+            return orders;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching orders for user {UserId}", userId);
             throw;
         }
     }

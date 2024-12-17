@@ -1,0 +1,139 @@
+@model  EcomPulse.Web.ViewModel.Shopping.ShoppingVM
+
+@{
+    ViewData["Title"] = "Create Order";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<head>
+
+    <link rel="stylesheet" href="~/css/home.css">
+</head>
+<div class="container">
+    <div class="row">
+        <!-- Left Sidebar - Filters -->
+        <div class="col-md-3">
+            <h3>Filter</h3>
+
+            <!-- Price Range Filter -->
+            <div>
+                <h4>Price Range</h4>
+                @using (Html.BeginForm("Index", "Shopping", FormMethod.Get, new { id = "filterForm" }))
+                {
+                    <div>
+                        <label for="minPrice">Min Price</label>
+                        <input type="number" name="minPrice" id="minPrice" 
+                               value="@(Model.MinPrice ?? 0)" class="form-control" onkeydown="applyFilters(event)" />
+                    </div>
+                    <div>
+                        <label for="maxPrice">Max Price</label>
+                        <input type="number" name="maxPrice" id="maxPrice" 
+                               value="@(Model.MaxPrice ?? 0)" class="form-control" onkeydown="applyFilters(event)" />
+                    </div>
+
+                }
+            </div>
+
+            <!-- Categories Filter -->
+            <div class="mt-4">
+                <h4>Categories</h4>
+                <ul class="list-group">
+                    @foreach (var category in Model.Categories)
+                    {
+                        <li class="list-group-item">
+                            <a href="@Url.Action("Index", "Shopping", new { categoryId = category.Id })" style="color: black; text-decoration: none;" onmouseover="this.style.color='#ffcc00'" onmouseout="this.style.color='black'">
+                                @category.Name
+                            </a>
+
+
+
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+
+        <!-- Main Content - Products -->
+        <div class="col-md-9">
+            <h3>Products</h3>
+            <div class="row">
+                @foreach (var product in Model.Products)
+                {
+                    <div class="col-md-4 mb-4">
+                        <div class="card">
+                            <img src="@product.ImageUrl" class="card-img-top" alt="@product.Name" />
+                            <div class="card-body">
+                                <h5 class="card-title">@product.Name</h5>
+                                <p class="card-text">
+                                    <a href="@Url.Action("Details", "Product", new { id = product.Id })" style="color: black; text-decoration: none;" onmouseover="this.style.color='#ffcc00'" onmouseout="this.style.color='black'">
+                                        See Details
+                                    </a>
+                                </p>
+                                <p class="card-text"><strong>@product.Price.ToString("C")</strong></p>
+                                <button class="btn btn-primary add-to-cart" 
+                                        data-product-id="@product.Id" 
+                                        data-product-price="@product.Price">Add to Cart</button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Function to trigger form submission when price range input changes
+        function applyFilters(event) {
+            if (event.key === "Enter") {
+                document.getElementById('filterForm').submit();
+            }
+        }
+
+        // Function to apply category filter by updating the URL and submitting the form
+        function applyCategoryFilter(categoryId) {
+            console.log(categoryId);
+            var minPrice = document.getElementById('minPrice').value;
+            var maxPrice = document.getElementById('maxPrice').value;
+
+            // Add the categoryId parameter to the form and submit it
+            var form = document.getElementById('filterForm');
+            var actionUrl = '@Url.Action("Index", "Shopping")';
+            form.action = actionUrl + '?categoryId=' + categoryId + '&minPrice=' + minPrice + '&maxPrice=' + maxPrice;
+            form.submit();
+        }
+
+        $(document).ready(function() {
+            // Event handler for adding a product to the cart
+            $(".add-to-cart").click(function() {
+                var productId = $(this).data("product-id");
+                var productPrice = $(this).data("product-price");
+
+                // Send AJAX request
+                $.ajax({
+                    url: '/Shopping/AddProductToCart', // Replace with your controller's URL
+                    type: 'POST',
+                    data: {
+                        productId: productId,
+                        productPrice: productPrice
+                    },
+                    headers: {
+                        'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            alert(response.message); // Show success message
+                            // Update the cart UI if needed
+                        } else {
+                            alert(response.message); // Show error message
+                        }
+                    },
+                    error: function() {
+                        alert('An error occurred while processing your request.');
+                    }
+                });
+            });
+        });
+
+    </script>
+}

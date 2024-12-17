@@ -1,8 +1,31 @@
 ﻿@{
     ViewData["Title"] = "Home Page";
 }
+<head>
+    
+    <link rel="stylesheet" href="~/css/home.css">
+</head>
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="welcome-container">
+    <header class="hero-section">
+        <h1 class="hero-title">Discover the Best Deals on Our E-Commerce Website!</h1>
+        <p class="hero-subtitle">Shop now and enjoy exclusive offers on your favorite products.</p>
+        <a href="/Shopping" class="btn-primary">Start Shopping</a>
+    </header>
+
+    <section class="features">
+        <div class="feature">
+            <h3>Free Shipping</h3>
+            <p>Enjoy free shipping on orders over 200 DT.</p>
+        </div>
+        <div class="feature">
+            <h3>Secure Payment</h3>
+            <p>Pay safely with trusted payment methods.</p>
+        </div>
+        <div class="feature">
+            <h3>24/7 Support</h3>
+            <p>We're here to help anytime, anywhere.</p>
+        </div>
+    </section>
+
 </div>

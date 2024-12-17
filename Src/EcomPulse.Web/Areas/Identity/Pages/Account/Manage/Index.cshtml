@@ -4,15 +4,18 @@
     ViewData["Title"] = "Profile";
     ViewData["ActivePage"] = ManageNavPages.Index;
 }
+<head>
 
-<h3>@ViewData["Title"]</h3>
+    <link rel="stylesheet" href="~/css/home.css">
+</head>
+<h3 style="text-align: center; height: 10vh;">@ViewData["Title"]</h3>
 <partial name="_StatusMessage" for="StatusMessage"/>
-<div class="row">
+    <div class="row" style="display: flex; justify-content: center; align-items: center;  margin: 0;">
     <div class="col-md-6">
         <form id="profile-form" method="post">
             <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
             <div class="form-floating mb-3">
-                <input asp-for="Username" class="form-control" placeholder="Please choose your username." disabled/>
+                <input asp-for="Username" class="form-control" placeholder="Please choose your username." />
                 <label asp-for="Username" class="form-label"></label>
             </div>
             <div class="form-floating mb-3">
