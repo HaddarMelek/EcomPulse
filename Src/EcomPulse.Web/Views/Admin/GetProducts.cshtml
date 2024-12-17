@@ -1,0 +1,31 @@
+@model IEnumerable<EcomPulse.Web.ViewModel.Product.ProductVM>
+
+<h2>Products List</h2>
+
+<table>
+    <thead>
+    <tr>
+        <th>Name</th>
+        <th>Description</th>
+        <th>Price</th>
+        <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var product in Model)
+    {
+        <tr>
+            <td>@product.Name</td>
+            <td>@product.Description</td>
+            <td>@product.Price</td>
+            <td>
+                <a href="/Admin/Dashboard/products/@product.Id">Details</a>
+                <form method="post" action="/Admin/Dashboard/products/delete/@product.Id">
+                    <button type="submit">Delete</button>
+                </form>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+<a href="/Admin/Dashboard/products/create">Add Product</a>

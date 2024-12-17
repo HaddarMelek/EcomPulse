@@ -1,10 +1,9 @@
-using System;
-using System.Collections.Generic;
-
-namespace EcomPulse.Web.ViewModel;
-
-public class UserVM
+namespace EcomPulse.Web.ViewModel.User
 {
-    public Guid UserId { get; set; }
-    public List<OrderItemVM> Orders { get; set; } = new();
+    public class UserVM
+    {
+        public int Id { get; set; }
+        public string Email { get; set; }
+        public string Role { get; set; }
+    }
 }
