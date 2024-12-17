@@ -1,10 +1,12 @@
 using EcomPulse.Web.Models;
 using EcomPulse.Web.Services;
 using EcomPulse.Web.ViewModel;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EcomPulse.Web.Controllers;
 
+[Authorize]
 public class OrderController : Controller
 {
     private readonly OrderService _orderService;

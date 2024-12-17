@@ -2,10 +2,12 @@ using EcomPulse.Web.Services;
 using EcomPulse.Web.ViewModel;
 using EcomPulse.Web.ViewModel.Product;
 using EcomPulse.Web.ViewModel.Shopping;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EcomPulse.Web.Controllers;
 
+[Authorize]
 public class ShoppingController : Controller
 {
     private readonly ProductService _productService;
