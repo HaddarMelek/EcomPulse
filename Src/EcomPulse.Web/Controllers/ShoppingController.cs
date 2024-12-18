@@ -26,7 +26,6 @@ public class ShoppingController : Controller
         _cartService = cartService;
         _logger = logger;
     }
-    // GET
 
     [HttpGet]
     public async Task<IActionResult> Index(Guid? categoryId, decimal? minPrice, decimal? maxPrice)
@@ -54,6 +53,7 @@ public class ShoppingController : Controller
                 Id = prod.Id,
                 Name = prod.Name,
                 Price = prod.Price,
+                ImageUrl = prod.ImageUrl,
                 Description = prod.Description,
                 CategoryId = prod.CategoryId
             }).ToList(),
@@ -77,7 +77,6 @@ public class ShoppingController : Controller
         }
         catch (Exception ex)
         {
-            // Log the error and return failure response
             return Json(new { success = false, message = "An error occurred while adding the product to the cart." });
         }
     }
@@ -177,17 +176,16 @@ public class ShoppingController : Controller
         if (string.IsNullOrWhiteSpace(shippingAddress))
         {
             TempData["ErrorMessage"] = "Shipping address is required.";
-            return View("UserCart"); // Returning to the cart view (change as needed)
+            return View("UserCart"); 
         }
 
         try
         {
-            // Retrieve the cart by ID.
             var cart = await _cartService.GetCartByIdAsync(cartId);
             if (cart == null || !cart.CartItems.Any())
             {
                 TempData["ErrorMessage"] = "Cart is empty or invalid.";
-                return View("UserCart"); // Returning to the cart view (change as needed)
+                return View("UserCart"); 
             }
 
             var orderVm = new OrderVM
@@ -214,13 +212,13 @@ public class ShoppingController : Controller
             }
 
             TempData["ErrorMessage"] = "Failed to place the order.";
-            return View("UserCart"); // Returning to the cart view in case of failure
+            return View("UserCart"); 
         }
         catch (Exception ex)
         {
             _logger.LogError($"Error validating cart and creating order: {ex.Message}");
             TempData["ErrorMessage"] = "An error occurred while processing your order.";
-            return View("UserCart"); // Returning to the cart view in case of an error
+            return View("UserCart"); 
         }
     }
 

@@ -25,7 +25,6 @@ namespace EcomPulse.Web.Controllers
         {
             return View("Dashboard"); 
         }
-        // --- Products Management ---
 
         [HttpGet("products")]
         public async Task<IActionResult> GetProducts()
@@ -107,7 +106,6 @@ namespace EcomPulse.Web.Controllers
             return RedirectToAction("GetProducts");
         }
 
-        // --- Categories Management ---
 
         [HttpGet("categories")]
         public async Task<IActionResult> GetCategories()
@@ -152,7 +150,6 @@ namespace EcomPulse.Web.Controllers
             return RedirectToAction("GetCategories");
         }
 
-        // --- Orders Management ---
 
         [HttpGet("orders")]
         public async Task<IActionResult> GetOrders()

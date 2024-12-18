@@ -9,7 +9,6 @@ using Microsoft.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
@@ -42,7 +41,6 @@ using (var scope = app.Services.CreateScope())
 
     await SeedAdminUserAsync(userManager, roleManager);
 }
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     //app.UseMigrationsEndPoint();
@@ -50,7 +48,6 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS  value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
@@ -69,16 +66,14 @@ app.Run();
 static async Task SeedAdminUserAsync(UserManager<IdentityUser> userManager, RoleManager<IdentityRole> roleManager)
 {
     string adminEmail = "admin@ecompulse.com";
-    string adminPassword = "Admin@123"; // Ensure this meets Identity password rules
+    string adminPassword = "Admin@123"; 
     string adminRole = "Admin";
 
-    // Create the role if it doesn't exist
     if (!await roleManager.RoleExistsAsync(adminRole))
     {
         await roleManager.CreateAsync(new IdentityRole(adminRole));
     }
 
-    // Check if the admin user exists
     var existingAdmin = await userManager.FindByEmailAsync(adminEmail);
     if (existingAdmin == null)
     {
@@ -86,20 +81,17 @@ static async Task SeedAdminUserAsync(UserManager<IdentityUser> userManager, Role
         {
             UserName = adminEmail,
             Email = adminEmail,
-            EmailConfirmed = true // Set email as confirmed
+            EmailConfirmed = true 
         };
 
-        // Create the admin user
         var result = await userManager.CreateAsync(adminUser, adminPassword);
 
-        // Assign the Admin role to the user
         if (result.Succeeded)
         {
             await userManager.AddToRoleAsync(adminUser, adminRole);
         }
         else
         {
-            // Log any errors during user creation
             foreach (var error in result.Errors)
             {
                 Console.WriteLine($"Error: {error.Description}");
