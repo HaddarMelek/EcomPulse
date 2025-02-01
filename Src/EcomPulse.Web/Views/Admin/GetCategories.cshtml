@@ -1,0 +1,22 @@
+@model IEnumerable<EcomPulse.Web.ViewModel.Product.CategoryVM>
+
+<h2>Categories</h2>
+
+<form method="post" action="/Admin/Dashboard/categories/add">
+    <input type="text" name="Name" placeholder="Category Name" required />
+    <button type="submit">Add Category</button>
+</form>
+
+<ul>
+    @foreach (var category in Model)
+    {
+        <li>
+            @category.Name
+            <form method="post" action="/Admin/Dashboard/categories/delete/@category.Id" style="display:inline;">
+                <button type="submit">Delete</button>
+            </form>
+        </li>
+    }
+</ul>
+
+<a href="/Admin/Dashboard">Back to Dashboard</a>

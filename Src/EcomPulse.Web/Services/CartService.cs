@@ -119,23 +119,20 @@ public class CartService
     {
         var cart = await GetOrCreateCartForUserAsync(user);
 
-        // Check if the product already exists in the cart
         var cartItem = cart.CartItems.FirstOrDefault(item => item.ProductId == productId);
 
-        // If product exists, increase the quantity
         if (cartItem != null)
         {
-            cartItem.Quantity++; // Increase quantity by 1
+            cartItem.Quantity++;
             _context.CartItems.Update(cartItem);
         }
         else
         {
-            // If product does not exist in the cart, add it as a new item
             cartItem = new CartItem
             {
                 CartId = cart.Id,
                 ProductId = productId,
-                Quantity = 1, // Start with quantity of 1
+                Quantity = 1, 
                 ProductPrice = productPrice
             };
             await _context.CartItems.AddAsync(cartItem);

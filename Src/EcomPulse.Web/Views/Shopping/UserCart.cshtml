@@ -117,7 +117,7 @@ else
                             
                             alert(JSON.stringify(response)); 
                         } else {
-                            alert(JSON.stringify(response)); // Show error message
+                            alert(JSON.stringify(response)); 
                         }
                     },
                     error: function () {
@@ -131,7 +131,7 @@ else
                 var productId = $(this).data("product-id");
 
                 $.ajax({
-                    url: '/Shopping/RemoveProduct/', // Replace with your controller's URL
+                    url: '/Shopping/RemoveProduct/', 
                     type: 'POST',
                     data: {
                         cartId: cartId,
@@ -171,7 +171,7 @@ else
                     success: function (response) {
                         alert(response.message);
                         if (response.success) {
-                            location.reload(); // Reload to show empty cart
+                            location.reload(); 
                         }
                     },
                     error: function () {

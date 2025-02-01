@@ -5,9 +5,10 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 <head>
-
     <link rel="stylesheet" href="~/css/home.css">
+   
 </head>
+
 <div class="container">
     <div class="row">
         <!-- Left Sidebar - Filters -->
@@ -33,7 +34,6 @@
                 }
             </div>
 
-            <!-- Categories Filter -->
             <div class="mt-4">
                 <h4>Categories</h4>
                 <ul class="list-group">
@@ -52,7 +52,6 @@
             </div>
         </div>
 
-        <!-- Main Content - Products -->
         <div class="col-md-9">
             <h3>Products</h3>
             <div class="row">
@@ -60,7 +59,9 @@
                 {
                     <div class="col-md-4 mb-4">
                         <div class="card">
-                            <img src="@product.ImageUrl" class="card-img-top" alt="@product.Name" />
+                            <div class="img-container">  <!-- Conteneur pour l'image -->
+                                <img src="@Url.Content($"~/{product.ImageUrl}")" alt="Product Image" class="img-fluid" />
+                            </div>
                             <div class="card-body">
                                 <h5 class="card-title">@product.Name</h5>
                                 <p class="card-text">
@@ -68,13 +69,12 @@
                                         See Details
                                     </a>
                                 </p>
-                                <p class="card-text"><strong>@product.Price.ToString("C")</strong></p>
-                                <button class="btn btn-primary add-to-cart" 
-                                        data-product-id="@product.Id" 
-                                        data-product-price="@product.Price">Add to Cart</button>
+                                <p class="card-text"><strong>@product.Price DT</strong></p>
+                                <button class="btn btn-primary add-to-cart" data-product-id="@product.Id" data-product-price="@product.Price">Add to Cart</button>
                             </div>
                         </div>
                     </div>
+
                 }
             </div>
         </div>
@@ -111,7 +111,7 @@
 
                 // Send AJAX request
                 $.ajax({
-                    url: '/Shopping/AddProductToCart', // Replace with your controller's URL
+                    url: '/Shopping/AddProductToCart', 
                     type: 'POST',
                     data: {
                         productId: productId,
@@ -122,10 +122,9 @@
                     },
                     success: function(response) {
                         if (response.success) {
-                            alert(response.message); // Show success message
-                            // Update the cart UI if needed
+                            alert(response.message); 
                         } else {
-                            alert(response.message); // Show error message
+                            alert(response.message); 
                         }
                     },
                     error: function() {
