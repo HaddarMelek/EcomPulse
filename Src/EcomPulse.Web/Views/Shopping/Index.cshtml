@@ -5,9 +5,10 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 <head>
-
     <link rel="stylesheet" href="~/css/home.css">
+   
 </head>
+
 <div class="container">
     <div class="row">
         <!-- Left Sidebar - Filters -->
@@ -58,9 +59,9 @@
                 {
                     <div class="col-md-4 mb-4">
                         <div class="card">
-
-                            <img src="@Url.Content($"~/{product.ImageUrl}")" alt="Product Image" class="img-fluid" />
-
+                            <div class="img-container">  <!-- Conteneur pour l'image -->
+                                <img src="@Url.Content($"~/{product.ImageUrl}")" alt="Product Image" class="img-fluid" />
+                            </div>
                             <div class="card-body">
                                 <h5 class="card-title">@product.Name</h5>
                                 <p class="card-text">
@@ -68,13 +69,12 @@
                                         See Details
                                     </a>
                                 </p>
-                                <p class="card-text"><strong>@product.Price.ToString("C")</strong></p>
-                                <button class="btn btn-primary add-to-cart" 
-                                        data-product-id="@product.Id" 
-                                        data-product-price="@product.Price">Add to Cart</button>
+                                <p class="card-text"><strong>@product.Price DT</strong></p>
+                                <button class="btn btn-primary add-to-cart" data-product-id="@product.Id" data-product-price="@product.Price">Add to Cart</button>
                             </div>
                         </div>
                     </div>
+
                 }
             </div>
         </div>
